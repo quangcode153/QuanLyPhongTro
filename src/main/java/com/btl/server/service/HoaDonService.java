@@ -15,7 +15,7 @@ public class HoaDonService {
     @Autowired
     private HoaDonRepository hoaDonRepository;
 
-    // Gọi Thư ký ra
+  
     @Autowired
     private NhatKyService nhatKyService;
 
@@ -23,13 +23,9 @@ public class HoaDonService {
         if (!hoaDonRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hóa đơn này để xóa!");
         }
-        
-        // Tiến hành chém (Xóa)
+      
         hoaDonRepository.deleteById(id);
 
-        // ==========================================
-        // CAMERA HOẠT ĐỘNG: Ghi lại ngay lập tức!
-        // ==========================================
         nhatKyService.ghiLog("XÓA HÓA ĐƠN", "Đã xóa vĩnh viễn hóa đơn có ID = " + id);
     }
 }

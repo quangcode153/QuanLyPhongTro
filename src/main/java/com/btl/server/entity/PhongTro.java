@@ -26,43 +26,24 @@ public class PhongTro {
     @Column(name = "mo_ta")
     private String moTa;
 
-    public Integer getId() {
-        return id;
-    }
+    @Column(name = "chu_tro_id")
+    private Integer chuTroId;
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
-    public String getTenPhong() {
-        return tenPhong;
-    }
+    public String getTenPhong() { return tenPhong; }
+    public void setTenPhong(String tenPhong) { this.tenPhong = tenPhong; }
 
-    public void setTenPhong(String tenPhong) {
-        this.tenPhong = tenPhong;
-    }
+    public Double getGiaPhong() { return giaPhong; }
+    public void setGiaPhong(Double giaPhong) { this.giaPhong = giaPhong; }
 
-    public Double getGiaPhong() {
-        return giaPhong;
-    }
+    public String getTrangThai() { return trangThai; }
+    public void setTrangThai(String trangThai) { this.trangThai = trangThai; }
 
-    public void setGiaPhong(Double giaPhong) {
-        this.giaPhong = giaPhong;
-    }
+    public String getMoTa() { return moTa; }
+    public void setMoTa(String moTa) { this.moTa = moTa; }
 
-    public String getTrangThai() {
-        return trangThai;
-    }
-
-    public void setTrangThai(String trangThai) {
-        this.trangThai = trangThai;
-    }
-
-    public String getMoTa() {
-        return moTa;
-    }
-
-    public void setMoTa(String moTa) {
-        this.moTa = moTa;
-    }
+    public Integer getChuTroId() { return chuTroId; }
+    public void setChuTroId(Integer chuTroId) { this.chuTroId = chuTroId; }
 }

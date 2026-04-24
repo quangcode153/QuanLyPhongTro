@@ -6,18 +6,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import com.btl.server.entity.TaiKhoan;
-import com.btl.server.repository.TaiKhoanRepository;
-
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -25,53 +21,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtService jwtService;
 
-    @Autowired
-    private TaiKhoanRepository taiKhoanRepository;
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
             
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        
-        try {
-            username = jwtService.extractUsername(jwt);
+        final String token = authHeader.substring(7);
+        final String username = jwtService.extractUsername(token);
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                
-                Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(username);
-                
-                if (userOpt.isPresent()) {
-                    TaiKhoan user = userOpt.get();
-                    
-                    if (jwtService.isTokenValid(jwt, user.getUsername())) {
-                        
-                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(user.getRole());
-                        
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                user.getUsername(),
-                                null,
-                                Collections.singletonList(authority)
-                        );
-                        
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
-                    }
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class));
+            if (role != null) {
+                String roleName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(roleName));
+
+                if (jwtService.isTokenValid(token, username)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            username, null, authorities);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (Exception e) {
-            logger.error("JWT Validation failed: " + e.getMessage());
         }
-
         filterChain.doFilter(request, response);
     }
 }

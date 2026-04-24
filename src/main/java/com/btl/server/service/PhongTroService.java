@@ -31,4 +31,12 @@ public class PhongTroService {
     public List<PhongTro> locPhongTheoGia(String trangThai, Double giaToiDa) {
         return phongTroRepository.findByTrangThaiAndGiaPhongLessThanEqual(trangThai, giaToiDa);
     }
+
+    public PhongTro getPhongById(Integer id) {
+        return phongTroRepository.findById(id).orElse(null);
+    }
+
+    public List<PhongTro> getPhongByChuTroId(Integer chuTroId) {
+        return phongTroRepository.findByChuTroId(chuTroId);
+    }
 }

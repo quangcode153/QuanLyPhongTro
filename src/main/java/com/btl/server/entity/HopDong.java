@@ -26,12 +26,12 @@ public class HopDong {
     private Double tienCoc;
 
     @Column(name = "trang_thai")
-    private String trangThai;
+    private String trangThai = "CHỜ_DUYỆT";
 
     @ManyToOne
     @JoinColumn(name = "khach_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private KhachHang khachHang;
+    private TaiKhoan khachHang; 
 
     @ManyToOne
     @JoinColumn(name = "phong_id")
@@ -40,22 +40,16 @@ public class HopDong {
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
-
     public LocalDate getNgayBatDau() { return ngayBatDau; }
     public void setNgayBatDau(LocalDate ngayBatDau) { this.ngayBatDau = ngayBatDau; }
-
     public LocalDate getNgayKetThuc() { return ngayKetThuc; }
     public void setNgayKetThuc(LocalDate ngayKetThuc) { this.ngayKetThuc = ngayKetThuc; }
-
     public Double getTienCoc() { return tienCoc; }
     public void setTienCoc(Double tienCoc) { this.tienCoc = tienCoc; }
-
     public String getTrangThai() { return trangThai; }
     public void setTrangThai(String trangThai) { this.trangThai = trangThai; }
-
-    public KhachHang getKhachHang() { return khachHang; }
-    public void setKhachHang(KhachHang khachHang) { this.khachHang = khachHang; }
-
+    public TaiKhoan getKhachHang() { return khachHang; }
+    public void setKhachHang(TaiKhoan khachHang) { this.khachHang = khachHang; }
     public PhongTro getPhongTro() { return phongTro; }
     public void setPhongTro(PhongTro phongTro) { this.phongTro = phongTro; }
 }
