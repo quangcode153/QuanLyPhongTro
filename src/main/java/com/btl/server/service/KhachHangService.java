@@ -28,18 +28,19 @@ public class KhachHangService {
 
         for (KhachHang kh : danhSachGoc) {
             KhachHangDTO dto = new KhachHangDTO();
-            dto.setTenKhach(kh.getTenKhach());
+
+            dto.setHoTen(kh.getHoTen());
+            dto.setNgaySinh(kh.getNgaySinh());
+            dto.setGioiTinh(kh.getGioiTinh());
+            dto.setSoCccd(kh.getSoCccd());
             dto.setSoDienThoai(kh.getSoDienThoai());
-            
-            if (kh.getPhongTro() != null) {
-                dto.setTenPhongDangThue(kh.getPhongTro().getTenPhong());
-            } else {
-                dto.setTenPhongDangThue("Chưa thuê phòng");
-            }
-            
+            dto.setEmail(kh.getEmail());
+            dto.setDiaChiThuongTru(kh.getDiaChiThuongTru());
+            dto.setTenPhongDangThue("Xem chi tiết trong Hợp Đồng");
+
             danhSachDTO.add(dto);
         }
-        
+
         return danhSachDTO;
     }
 }

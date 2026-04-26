@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import com.btl.server.entity.TaiKhoan;
+import com.btl.server.entity.KhachHang;
 import com.btl.server.repository.TaiKhoanRepository;
 import com.btl.server.security.JwtService;
 import com.btl.server.dto.AuthRequestDTO;
@@ -73,12 +74,17 @@ public class TaiKhoanController {
         taiKhoanMoi.setPassword(passwordEncoder.encode(request.getPassword()));
 
         String requestedRole = request.getRole();
-
         if ("ROLE_LANDLORD".equals(requestedRole)) {
             taiKhoanMoi.setRole("ROLE_LANDLORD");
         } else {
             taiKhoanMoi.setRole("ROLE_USER");
         }
+
+        KhachHang hoSoRong = new KhachHang();
+        hoSoRong.setHoTen(request.getUsername());
+
+        hoSoRong.setTaiKhoan(taiKhoanMoi);
+        taiKhoanMoi.setKhachHang(hoSoRong);
 
         taiKhoanRepository.save(taiKhoanMoi);
 
