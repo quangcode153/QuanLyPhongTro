@@ -10,7 +10,7 @@ public class KhachHang {
 
 	@Id
 	@Column(name = "khach_id")
-	private Integer id;
+	private Long id;
 
 	@OneToOne(fetch = FetchType.LAZY)
 	@MapsId
@@ -39,11 +39,11 @@ public class KhachHang {
 	@Column(name = "dia_chi_thuong_tru", columnDefinition = "TEXT")
 	private String diaChiThuongTru;
 
-	public Integer getId() {
+	public Long getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 

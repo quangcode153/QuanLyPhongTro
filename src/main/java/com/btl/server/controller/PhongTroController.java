@@ -53,7 +53,7 @@ public class PhongTroController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
-    public ResponseEntity<?> capNhatPhong(@PathVariable Integer id, @Valid @RequestBody PhongTro phongTroMoi) {
+    public ResponseEntity<?> capNhatPhong(@PathVariable Long id, @Valid @RequestBody PhongTro phongTroMoi) {
         PhongTro existingPhong = phongTroService.getPhongById(id);
         if (existingPhong == null) return ResponseEntity.notFound().build();
 
@@ -65,7 +65,7 @@ public class PhongTroController {
     @PutMapping("/{id}/trang-thai")
     @Transactional
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
-    public ResponseEntity<?> capNhatTrangThaiPhong(@PathVariable Integer id, @RequestParam String trangThai) {
+    public ResponseEntity<?> capNhatTrangThaiPhong(@PathVariable Long id, @RequestParam String trangThai) {
         PhongTro existingPhong = phongTroService.getPhongById(id);
         if (existingPhong == null) return ResponseEntity.notFound().build();
 
@@ -87,7 +87,7 @@ public class PhongTroController {
     @DeleteMapping("/{id}")
     @Transactional
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
-    public ResponseEntity<?> xoaPhong(@PathVariable Integer id) {
+    public ResponseEntity<?> xoaPhong(@PathVariable Long id) {
         PhongTro existingPhong = phongTroService.getPhongById(id);
         if (existingPhong == null) return ResponseEntity.notFound().build();
 
@@ -112,7 +112,7 @@ public class PhongTroController {
     }
 
     @GetMapping("/chu-tro/{chuTroId}")
-    public ResponseEntity<List<PhongTro>> layPhongTheoChuTro(@PathVariable Integer chuTroId) {
+    public ResponseEntity<List<PhongTro>> layPhongTheoChuTro(@PathVariable Long chuTroId) {
         return ResponseEntity.ok(phongTroService.getPhongByChuTroId(chuTroId));
     }
 }

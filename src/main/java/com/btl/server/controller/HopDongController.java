@@ -4,7 +4,6 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,11 +19,13 @@ import com.btl.server.service.HopDongService;
 @RequestMapping("/api/hop-dong")
 public class HopDongController {
 
-    @Autowired
-    private HopDongService hopDongService;
+    private final HopDongService hopDongService;
+    private final TaiKhoanRepository taiKhoanRepository;
 
-    @Autowired
-    private TaiKhoanRepository taiKhoanRepository;
+    public HopDongController(HopDongService hopDongService, TaiKhoanRepository taiKhoanRepository) {
+        this.hopDongService = hopDongService;
+        this.taiKhoanRepository = taiKhoanRepository;
+    }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -52,7 +53,7 @@ public class HopDongController {
 
     @GetMapping("/chu-tro/{chuTroId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
-    public ResponseEntity<List<HopDong>> layHopDongCuaChuTro(@PathVariable Integer chuTroId, Principal principal) {
+    public ResponseEntity<List<HopDong>> layHopDongCuaChuTro(@PathVariable Long chuTroId, Principal principal) {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName()).orElseThrow();
 
         if (!user.getRole().contains("ADMIN") && !user.getId().equals(chuTroId)) {
@@ -64,19 +65,27 @@ public class HopDongController {
 
     @GetMapping("/khach/{khachId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<HopDong>> layHopDongCuaKhach(@PathVariable Integer khachId, Principal principal) {
+    public ResponseEntity<List<HopDong>> layHopDongCuaKhach(
+            @PathVariable Long khachId,
+            @RequestParam(required = false, defaultValue = "ĐÃ_DUYỆT") String trangThai,
+            Principal principal) {
+
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName()).orElseThrow();
 
         if (!user.getId().equals(khachId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không được phép xem dữ liệu của người khác!");
         }
 
-        return ResponseEntity.ok(hopDongService.layHopDongTheoKhach(khachId));
+        if ("ALL".equalsIgnoreCase(trangThai)) {
+            return ResponseEntity.ok(hopDongService.layHopDongTheoKhach(khachId));
+        }
+
+        return ResponseEntity.ok(hopDongService.layHopDongTheoKhachVaTrangThai(khachId, trangThai));
     }
 
     @PutMapping("/{id}/trang-thai")
     @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
-    public ResponseEntity<?> capNhatTrangThai(@PathVariable Integer id, @RequestParam String trangThai, Principal principal) {
+    public ResponseEntity<?> capNhatTrangThai(@PathVariable Long id, @RequestParam String trangThai, Principal principal) {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName()).orElseThrow();
 
         hopDongService.capNhatTrangThaiHopDong(id, trangThai, user);

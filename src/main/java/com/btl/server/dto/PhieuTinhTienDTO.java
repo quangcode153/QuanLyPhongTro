@@ -1,7 +1,7 @@
 package com.btl.server.dto;
 
 public class PhieuTinhTienDTO {
-    private Integer phongId;
+    private Long phongId;
     private Integer thang;
     private Integer nam;
     private Double giaPhong;
@@ -11,8 +11,8 @@ public class PhieuTinhTienDTO {
     private Double tienNuoc;
     private Double tongTien;
 
-    public Integer getPhongId() { return phongId; }
-    public void setPhongId(Integer phongId) { this.phongId = phongId; }
+    public Long getPhongId() { return phongId; }
+    public void setPhongId(Long phongId) { this.phongId = phongId; }
 
     public Integer getThang() { return thang; }
     public void setThang(Integer thang) { this.thang = thang; }

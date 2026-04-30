@@ -6,7 +6,7 @@ import com.btl.server.entity.KhieuNai;
 import java.util.List;
 
 @Repository
-public interface KhieuNaiRepository extends JpaRepository<KhieuNai, Integer> {
+public interface KhieuNaiRepository extends JpaRepository<KhieuNai, Long> {
     
     
     List<KhieuNai> findAllByOrderByThoiGianGuiDesc();

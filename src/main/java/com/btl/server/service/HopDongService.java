@@ -1,5 +1,6 @@
 package com.btl.server.service;
 
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,7 @@ public class HopDongService {
     private PhongTroRepository phongTroRepository;
 
     public HopDong taoHopDong(HopDong hopDong) {
-        Integer idPhong = hopDong.getPhongTro().getId();
+        Long idPhong = hopDong.getPhongTro().getId();
         PhongTro phong = phongTroRepository.findById(idPhong)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phòng!"));
 
@@ -49,37 +50,53 @@ public class HopDongService {
         return hopDongRepository.findAll();
     }
 
-    public List<HopDong> layHopDongTheoChuTro(Integer chuTroId) {
+    public List<HopDong> layHopDongTheoChuTro(Long chuTroId) {
         return hopDongRepository.findByPhongTro_ChuTroId(chuTroId);
     }
 
-    public List<HopDong> layHopDongTheoKhach(Integer khachId) {
+    public List<HopDong> layHopDongTheoKhach(Long khachId) {
         return hopDongRepository.findByKhachHang_Id(khachId);
     }
 
+     public List<HopDong> layHopDongTheoKhachVaTrangThai(Long khachId, String trangThai) {
+        return hopDongRepository.findByKhachHang_IdAndTrangThai(khachId, trangThai);
+    }
+
     @Transactional
-    public HopDong capNhatTrangThaiHopDong(Integer hopDongId, String trangThaiMoi, TaiKhoan currentUser) {
+    public HopDong capNhatTrangThaiHopDong(Long hopDongId, String trangThaiMoi, TaiKhoan currentUser) {
         HopDong hd = hopDongRepository.findById(hopDongId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hợp đồng!"));
 
         if (!currentUser.getRole().contains("ADMIN")) {
-            if (!hd.getPhongTro().getChuTroId().equals(currentUser.getId())) {
+             if (!hd.getPhongTro().getChuTroId().equals(currentUser.getId())) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền duyệt hợp đồng của khu trọ khác!");
             }
         }
 
         hd.setTrangThai(trangThaiMoi);
 
-        if ("ĐÃ_DUYỆT".equals(trangThaiMoi) && hd.getPhongTro() != null) {
+        if (hd.getPhongTro() != null) {
             PhongTro p = hd.getPhongTro();
-            p.setTrangThai("Đã thuê");
-            phongTroRepository.save(p);
+            
+            if ("ĐÃ_DUYỆT".equals(trangThaiMoi)) {
+                p.setTrangThai("Đã thuê");
+                phongTroRepository.save(p);
 
-            List<HopDong> danhSachCungPhong = hopDongRepository.findByPhongTro_Id(p.getId());
-            for (HopDong hopDongKhac : danhSachCungPhong) {
-                if (!hopDongKhac.getId().equals(hd.getId()) && "CHỜ_DUYỆT".equals(hopDongKhac.getTrangThai())) {
-                    hopDongKhac.setTrangThai("TỪ_CHỐI");
-                    hopDongRepository.save(hopDongKhac);
+                 List<HopDong> danhSachCungPhong = hopDongRepository.findByPhongTro_Id(p.getId());
+                for (HopDong hopDongKhac : danhSachCungPhong) {
+                    if (!hopDongKhac.getId().equals(hd.getId()) && "CHỜ_DUYỆT".equals(hopDongKhac.getTrangThai())) {
+                        hopDongKhac.setTrangThai("TỪ_CHỐI");
+                        hopDongRepository.save(hopDongKhac);
+                    }
+                }
+            } 
+            else if (Arrays.asList("TỪ_CHỐI", "HỦY", "ĐÃ_KẾT_THÚC").contains(trangThaiMoi)) {
+                boolean conNguoiKhacThue = hopDongRepository
+                        .existsByPhongTro_IdAndTrangThaiAndIdNot(p.getId(), "ĐÃ_DUYỆT", hd.getId());
+                
+                if (!conNguoiKhacThue) {
+                    p.setTrangThai("Trống");
+                    phongTroRepository.save(p);
                 }
             }
         }

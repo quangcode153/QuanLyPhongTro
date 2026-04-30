@@ -16,7 +16,7 @@ public class PhongTroSecurityService {
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
 
-    public boolean isOwner(Integer phongId, String username) {
+    public boolean isOwner(Long phongId, String username) {
         PhongTro phong = phongTroService.getPhongById(phongId);
         TaiKhoan user = taiKhoanRepository.findByUsername(username).orElse(null);
         

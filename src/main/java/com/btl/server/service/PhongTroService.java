@@ -20,7 +20,7 @@ public class PhongTroService {
         return phongTroRepository.save(phongTro);
     }
 
-    public void deletePhong(Integer id) {
+    public void deletePhong(Long id) {
         phongTroRepository.deleteById(id);
     }
 
@@ -32,11 +32,11 @@ public class PhongTroService {
         return phongTroRepository.findByTrangThaiAndGiaPhongLessThanEqual(trangThai, giaToiDa);
     }
 
-    public PhongTro getPhongById(Integer id) {
+    public PhongTro getPhongById(Long id) {
         return phongTroRepository.findById(id).orElse(null);
     }
 
-    public List<PhongTro> getPhongByChuTroId(Integer chuTroId) {
+    public List<PhongTro> getPhongByChuTroId(Long chuTroId) {
         return phongTroRepository.findByChuTroId(chuTroId);
     }
 }

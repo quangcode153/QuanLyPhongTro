@@ -9,7 +9,7 @@ public class PhongTro {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @NotBlank(message = "Tên phòng không được để trống!")
     @Column(name = "ten_phong")
@@ -27,10 +27,10 @@ public class PhongTro {
     private String moTa;
 
     @Column(name = "chu_tro_id")
-    private Integer chuTroId;
+    private Long chuTroId;
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public String getTenPhong() { return tenPhong; }
     public void setTenPhong(String tenPhong) { this.tenPhong = tenPhong; }
@@ -44,6 +44,6 @@ public class PhongTro {
     public String getMoTa() { return moTa; }
     public void setMoTa(String moTa) { this.moTa = moTa; }
 
-    public Integer getChuTroId() { return chuTroId; }
-    public void setChuTroId(Integer chuTroId) { this.chuTroId = chuTroId; }
+    public Long getChuTroId() { return chuTroId; }
+    public void setChuTroId(Long chuTroId) { this.chuTroId = chuTroId; }
 }

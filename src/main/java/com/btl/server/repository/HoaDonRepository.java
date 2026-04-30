@@ -8,5 +8,5 @@ import com.btl.server.entity.HoaDon;
 public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     
     
-    boolean existsByPhongTroIdAndThangAndNam(Integer phongId, Integer thang, Integer nam);
+    boolean existsByPhongTroIdAndThangAndNam(Long phongId, Integer thang, Integer nam);
 }

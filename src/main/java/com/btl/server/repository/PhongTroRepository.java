@@ -6,9 +6,9 @@ import org.springframework.stereotype.Repository;
 import com.btl.server.entity.PhongTro;
 
 @Repository
-public interface PhongTroRepository extends JpaRepository<PhongTro, Integer> {
+public interface PhongTroRepository extends JpaRepository<PhongTro, Long> {
     
-    List<PhongTro> findByChuTroId(Integer chuTroId);
+    List<PhongTro> findByChuTroId(Long chuTroId);
 
     List<PhongTro> findByTrangThai(String trangThai);
 

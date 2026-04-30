@@ -4,7 +4,7 @@ import com.btl.server.entity.KhachHang;
 import java.time.LocalDate;
 
 public class HoSoResponseDTO {
-    private Integer id;
+    private Long id;
     private String hoTen;
     private LocalDate ngaySinh;
     private String gioiTinh;
@@ -13,7 +13,6 @@ public class HoSoResponseDTO {
     private String email;
     private String diaChiThuongTru;
 
-    // Constructor tự động map từ Entity sang DTO
     public HoSoResponseDTO(KhachHang entity) {
         this.id = entity.getId();
         this.hoTen = entity.getHoTen();
@@ -25,8 +24,7 @@ public class HoSoResponseDTO {
         this.diaChiThuongTru = entity.getDiaChiThuongTru();
     }
 
-    // --- GETTERS --- (Chỉ cần Getters để parse ra JSON)
-    public Integer getId() { return id; }
+    public Long getId() { return id; }
     public String getHoTen() { return hoTen; }
     public LocalDate getNgaySinh() { return ngaySinh; }
     public String getGioiTinh() { return gioiTinh; }

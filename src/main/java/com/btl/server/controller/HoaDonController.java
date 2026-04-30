@@ -1,7 +1,9 @@
 package com.btl.server.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.btl.server.service.HoaDonService;
 
@@ -9,13 +11,15 @@ import com.btl.server.service.HoaDonService;
 @RequestMapping("/api/hoa-don")
 public class HoaDonController {
 
-    @Autowired
-    private HoaDonService hoaDonService;
+    private final HoaDonService hoaDonService;
 
-    
+    public HoaDonController(HoaDonService hoaDonService) {
+        this.hoaDonService = hoaDonService;
+    }
+
     @DeleteMapping("/xoa/{id}")
-    public String xoaHoaDon(@PathVariable Integer id) {
-        hoaDonService.xoaHoaDonBịSai(id);
-        return "Đã xóa hóa đơn thành công! Lớp khiên đã mở, bạn có thể chốt lại số điện nước.";
+    public ResponseEntity<Void> xoaHoaDon(@PathVariable Integer id) {
+        hoaDonService.xoaHoaDonBiSai(id);
+        return ResponseEntity.noContent().build();
     }
 }

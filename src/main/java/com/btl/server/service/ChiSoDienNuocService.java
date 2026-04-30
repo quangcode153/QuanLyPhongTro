@@ -30,7 +30,7 @@ public class ChiSoDienNuocService {
 
     public PhieuTinhTienDTO chotSoVaTinhTien(ChiSoDienNuoc chiSo) {
         
-        Integer idPhong = chiSo.getPhongTro().getId();
+       Long idPhong = chiSo.getPhongTro().getId();
         Integer thang = chiSo.getThang();
         Integer nam = chiSo.getNam();
 
