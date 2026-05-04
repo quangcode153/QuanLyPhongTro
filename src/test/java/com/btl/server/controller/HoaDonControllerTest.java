@@ -26,7 +26,7 @@ class HoaDonControllerTest {
 
     @Test
     void testXoaHoaDonThanhCong_TraVe204() {
-        Integer idHoaDon = 1;
+        Long idHoaDon = 1L;
 
         ResponseEntity<Void> response = hoaDonController.xoaHoaDon(idHoaDon);
 
@@ -36,7 +36,7 @@ class HoaDonControllerTest {
 
     @Test
     void testXoaHoaDonThatBai_NemRaLoi() {
-        Integer idHoaDon = 99;
+        Long idHoaDon = 99L;
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hóa đơn"))
                 .when(hoaDonService).xoaHoaDonBiSai(idHoaDon);
 

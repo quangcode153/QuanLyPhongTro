@@ -1,13 +1,17 @@
 package com.btl.server.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import java.math.BigDecimal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.btl.server.entity.ChiSoDienNuoc;
 import com.btl.server.entity.HoaDon;
 import com.btl.server.entity.PhongTro;
+import com.btl.server.enums.TrangThaiHoaDon;
+import com.btl.server.exception.BadRequestException;
+import com.btl.server.exception.NotFoundException;
 import com.btl.server.repository.ChiSoDienNuocRepository;
 import com.btl.server.repository.HoaDonRepository;
 import com.btl.server.repository.PhongTroRepository;
@@ -16,47 +20,58 @@ import com.btl.server.dto.PhieuTinhTienDTO;
 @Service
 public class ChiSoDienNuocService {
 
-    @Autowired
-    private ChiSoDienNuocRepository chiSoRepo;
+    private static final Logger log = LoggerFactory.getLogger(ChiSoDienNuocService.class);
 
-    @Autowired
-    private PhongTroRepository phongTroRepository;
+    private final ChiSoDienNuocRepository chiSoRepo;
+    private final PhongTroRepository phongTroRepository;
+    private final HoaDonRepository hoaDonRepository;
 
-    @Autowired
-    private HoaDonRepository hoaDonRepository;
+    private static final BigDecimal GIA_DIEN = new BigDecimal("3500.0");
+    private static final BigDecimal GIA_NUOC = new BigDecimal("20000.0");
 
-    private final double GIA_DIEN = 3500.0;
-    private final double GIA_NUOC = 20000.0;
+    public ChiSoDienNuocService(ChiSoDienNuocRepository chiSoRepo, 
+                                PhongTroRepository phongTroRepository, 
+                                HoaDonRepository hoaDonRepository) {
+        this.chiSoRepo = chiSoRepo;
+        this.phongTroRepository = phongTroRepository;
+        this.hoaDonRepository = hoaDonRepository;
+    }
 
+    @Transactional
     public PhieuTinhTienDTO chotSoVaTinhTien(ChiSoDienNuoc chiSo) {
         
-       Long idPhong = chiSo.getPhongTro().getId();
+        Long idPhong = chiSo.getPhongTro().getId();
         Integer thang = chiSo.getThang();
         Integer nam = chiSo.getNam();
 
         if (hoaDonRepository.existsByPhongTroIdAndThangAndNam(idPhong, thang, nam)) {
-            throw new RuntimeException("Dữ liệu tháng " + thang + "/" + nam + " của phòng này đã tồn tại. Vui lòng kiểm tra lại hoặc xóa hóa đơn cũ trước khi chốt số mới!");
+            throw new BadRequestException("Dữ liệu tháng " + thang + "/" + nam + " của phòng này đã tồn tại. Vui lòng kiểm tra lại hoặc xóa hóa đơn cũ trước khi chốt số mới!");
+        }
+
+        if (chiSo.getSoDienMoi() < chiSo.getSoDienCu() || chiSo.getSoNuocMoi() < chiSo.getSoNuocCu()) {
+            throw new BadRequestException("Chỉ số mới không được nhỏ hơn chỉ số cũ!");
         }
 
         PhongTro phong = phongTroRepository.findById(idPhong)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phòng này!"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng này!"));
 
-        double giaPhong = phong.getGiaPhong();
+        BigDecimal giaPhong = phong.getGiaPhong();
         ChiSoDienNuoc daLuu = chiSoRepo.save(chiSo);
 
         int soDienDung = daLuu.getSoDienMoi() - daLuu.getSoDienCu();
         int soNuocDung = daLuu.getSoNuocMoi() - daLuu.getSoNuocCu();
         
-        double tienDien = soDienDung * GIA_DIEN;
-        double tienNuoc = soNuocDung * GIA_NUOC;
-        double tongTien = giaPhong + tienDien + tienNuoc;
+        BigDecimal tienDien = GIA_DIEN.multiply(BigDecimal.valueOf(soDienDung));
+        BigDecimal tienNuoc = GIA_NUOC.multiply(BigDecimal.valueOf(soNuocDung));
+        BigDecimal tongTien = giaPhong.add(tienDien).add(tienNuoc);
 
         HoaDon hoaDonMoi = new HoaDon();
         hoaDonMoi.setPhongTro(phong);
         hoaDonMoi.setThang(daLuu.getThang());
         hoaDonMoi.setNam(daLuu.getNam());
         hoaDonMoi.setTongTien(tongTien);
-        hoaDonMoi.setTrangThai("Chưa thanh toán");
+        
+        hoaDonMoi.setTrangThai(TrangThaiHoaDon.CHUA_THANH_TOAN); 
         
         hoaDonRepository.save(hoaDonMoi);
 
@@ -71,6 +86,7 @@ public class ChiSoDienNuocService {
         phieu.setTienNuoc(tienNuoc);
         phieu.setTongTien(tongTien);
 
+        log.info("Chốt số điện nước thành công cho phòng ID: {}, Tháng: {}/{}", idPhong, thang, nam);
         return phieu;
     }
 }

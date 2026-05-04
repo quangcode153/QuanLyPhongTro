@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TinNhanRepository extends JpaRepository<TinNhan, Integer> {
+public interface TinNhanRepository extends JpaRepository<TinNhan, Long> {
     @Query("SELECT t FROM TinNhan t WHERE (t.nguoiGuiId = :user1 AND t.nguoiNhanId = :user2) OR (t.nguoiGuiId = :user2 AND t.nguoiNhanId = :user1) ORDER BY t.thoiGian ASC")
-    List<TinNhan> timLichSuChat(Integer user1, Integer user2);
+    List<TinNhan> timLichSuChat(Long user1, Long user2);
 }

@@ -35,7 +35,7 @@ class ChatControllerTest {
     @BeforeEach
     void setUp() {
         tinNhanTest = new TinNhan();
-        tinNhanTest.setId(1);
+        tinNhanTest.setId(1L);
         tinNhanTest.setNguoiGuiId(10);
         tinNhanTest.setNguoiNhanId(20);
         tinNhanTest.setNoiDung("Xin chao");
@@ -44,13 +44,13 @@ class ChatControllerTest {
     @Test
     void testLayLichSuChat() {
         List<TinNhan> danhSachMock = Arrays.asList(tinNhanTest);
-        when(tinNhanRepository.timLichSuChat(10, 20)).thenReturn(danhSachMock);
+        when(tinNhanRepository.timLichSuChat(10L, 20l)).thenReturn(danhSachMock);
 
-        List<TinNhan> ketQua = chatController.layLichSuChat(10, 20);
+        List<TinNhan> ketQua = chatController.layLichSuChat(10L, 20L);
 
         assertEquals(1, ketQua.size());
         assertEquals("Xin chao", ketQua.get(0).getNoiDung());
-        verify(tinNhanRepository).timLichSuChat(10, 20);
+        verify(tinNhanRepository).timLichSuChat(10L, 20L);
     }
 
     @Test

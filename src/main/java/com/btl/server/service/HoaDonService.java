@@ -17,12 +17,16 @@ public class HoaDonService {
         this.nhatKyService = nhatKyService;
     }
 
-    public void xoaHoaDonBiSai(Integer id) {
+    public void xoaHoaDonBiSai(Long id) {
         if (!hoaDonRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hóa đơn này để xóa!");
         }
         
         hoaDonRepository.deleteById(id);
         nhatKyService.ghiLog("XÓA HÓA ĐƠN", "Đã xóa vĩnh viễn hóa đơn có ID = " + id);
+    }
+
+    public java.util.List<com.btl.server.entity.HoaDon> layDanhSachHoaDonCuaKhach(Long khachHangId) {
+        return hoaDonRepository.findHoaDonByKhachHangId(khachHangId);
     }
 }

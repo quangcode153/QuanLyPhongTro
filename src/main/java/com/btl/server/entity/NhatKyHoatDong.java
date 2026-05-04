@@ -9,7 +9,7 @@ public class NhatKyHoatDong {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "thoi_gian")
     private LocalDateTime thoiGian;
@@ -23,8 +23,8 @@ public class NhatKyHoatDong {
     @Column(name = "chi_tiet", length = 500)
     private String chiTiet;
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public LocalDateTime getThoiGian() { return thoiGian; }
     public void setThoiGian(LocalDateTime thoiGian) { this.thoiGian = thoiGian; }

@@ -93,7 +93,6 @@ class KhachHangControllerTest {
 
     @Test
     void testLayHoSoCaNhan_ShouldThrowException_WhenPrincipalNull() {
-        // Vì trong Controller ông gọi trực tiếp principal.getName() nên sẽ văng NullPointer/IllegalState
         assertThrows(RuntimeException.class, () -> khachHangController.layHoSoCaNhan(null));
         verifyNoInteractions(khachHangService);
     }

@@ -16,7 +16,11 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.btl.server.entity.TaiKhoan;
+import com.btl.server.repository.TaiKhoanRepository; 
+
 import java.io.IOException;
+import java.util.Optional;
 
 import io.jsonwebtoken.ExpiredJwtException;
 
@@ -31,6 +35,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     @Lazy
     private UserDetailsService userDetailsService;
+
+    @Autowired
+    private TaiKhoanRepository taiKhoanRepository; 
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -57,10 +64,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
+                Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(username);
+                
+                if (userOpt.isPresent() && userOpt.get().isLocked()) {
+                    logger.warn("⚠️ Chặn truy cập: Tài khoản '{}' đang bị khóa!", username);
+                    
+                    SecurityContextHolder.clearContext();
+                    
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"message\": \"Tài khoản của bạn đã bị khóa, phiên đăng nhập bị hủy!\"}");
+                    
+                    response.getWriter().flush();
+                    return; 
+                }
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtService.isTokenValid(token, userDetails)) {
-
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,

@@ -1,48 +1,69 @@
 package com.btl.server.service;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
+import com.btl.server.dto.HopDongRequestDTO;
 import com.btl.server.entity.HopDong;
 import com.btl.server.entity.PhongTro;
 import com.btl.server.entity.TaiKhoan;
+import com.btl.server.enums.TrangThaiHopDong;
+import com.btl.server.enums.TrangThaiPhong;
+import com.btl.server.exception.BadRequestException;
+import com.btl.server.exception.ForbiddenException;
+import com.btl.server.exception.NotFoundException;
 import com.btl.server.repository.HopDongRepository;
 import com.btl.server.repository.PhongTroRepository;
 
 @Service
 public class HopDongService {
 
-    @Autowired
-    private HopDongRepository hopDongRepository;
+    private static final Logger log = LoggerFactory.getLogger(HopDongService.class);
 
-    @Autowired
-    private PhongTroRepository phongTroRepository;
+    private final HopDongRepository hopDongRepository;
+    private final PhongTroRepository phongTroRepository;
 
-    public HopDong taoHopDong(HopDong hopDong) {
-        Long idPhong = hopDong.getPhongTro().getId();
-        PhongTro phong = phongTroRepository.findById(idPhong)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phòng!"));
+    public HopDongService(HopDongRepository hopDongRepository, PhongTroRepository phongTroRepository) {
+        this.hopDongRepository = hopDongRepository;
+        this.phongTroRepository = phongTroRepository;
+    }
 
-        if ("Đã thuê".equals(phong.getTrangThai())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phòng đã có người thuê!");
+    public HopDong taoHopDong(HopDongRequestDTO request, TaiKhoan khachHang) {
+        
+        if (request.getNgayKetThuc() != null && request.getNgayKetThuc().isBefore(request.getNgayBatDau())) {
+            throw new BadRequestException("Ngày kết thúc phải sau ngày bắt đầu!");
         }
 
-        boolean daCoNguoiThu = hopDongRepository.existsByPhongTroAndTrangThai(phong, "ĐÃ_DUYỆT");
-        if (daCoNguoiThu) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phòng này đã có người thuê chính thức!");
+        PhongTro phong = phongTroRepository.findById(request.getPhongTroId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng!"));
+
+        if (phong.getTrangThai() != TrangThaiPhong.TRONG) {
+            throw new BadRequestException("Phòng không ở trạng thái TRỐNG, không thể thuê!");
         }
 
-        boolean daGuiYeuCau = hopDongRepository.existsByKhachHangAndPhongTroAndTrangThai(
-                hopDong.getKhachHang(), phong, "CHỜ_DUYỆT");
-        if (daGuiYeuCau) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bạn đã gửi yêu cầu thuê phòng này rồi, vui lòng chờ duyệt!");
+        if (hopDongRepository.existsByPhongTroAndTrangThai(phong, TrangThaiHopDong.DA_DUYET)) {
+            throw new BadRequestException("Phòng này đã có người thuê chính thức!");
         }
 
+        if (hopDongRepository.existsByKhachHangAndPhongTroAndTrangThai(khachHang, phong, TrangThaiHopDong.CHO_DUYET)) {
+            throw new BadRequestException("Bạn đã gửi yêu cầu thuê phòng này rồi, vui lòng chờ duyệt!");
+        }
+
+        HopDong hopDong = new HopDong();
+        hopDong.setKhachHang(khachHang);
+        hopDong.setPhongTro(phong);
+        hopDong.setNgayBatDau(request.getNgayBatDau());
+        hopDong.setNgayKetThuc(request.getNgayKetThuc());
+        hopDong.setTienCoc(request.getTienCoc() != null ? request.getTienCoc() : BigDecimal.ZERO);
+        hopDong.setTrangThai(TrangThaiHopDong.CHO_DUYET);
+
+        log.info("Khách hàng {} tạo yêu cầu thuê phòng {}", khachHang.getUsername(), phong.getId());
         return hopDongRepository.save(hopDong);
     }
 
@@ -58,18 +79,24 @@ public class HopDongService {
         return hopDongRepository.findByKhachHang_Id(khachId);
     }
 
-     public List<HopDong> layHopDongTheoKhachVaTrangThai(Long khachId, String trangThai) {
+    public List<HopDong> layHopDongTheoKhachVaTrangThai(Long khachId, TrangThaiHopDong trangThai) {
         return hopDongRepository.findByKhachHang_IdAndTrangThai(khachId, trangThai);
     }
 
     @Transactional
-    public HopDong capNhatTrangThaiHopDong(Long hopDongId, String trangThaiMoi, TaiKhoan currentUser) {
+    public HopDong capNhatTrangThaiHopDong(Long hopDongId, TrangThaiHopDong trangThaiMoi, TaiKhoan currentUser) {
         HopDong hd = hopDongRepository.findById(hopDongId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hợp đồng!"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hợp đồng!"));
 
-        if (!currentUser.getRole().contains("ADMIN")) {
+         if (!"ROLE_ADMIN".equals(currentUser.getRole())) {
              if (!hd.getPhongTro().getChuTroId().equals(currentUser.getId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền duyệt hợp đồng của khu trọ khác!");
+                throw new ForbiddenException("Bạn không có quyền thao tác trên hợp đồng của khu trọ khác!");
+            }
+        }
+
+       if (trangThaiMoi == TrangThaiHopDong.DA_DUYET) {
+            if (hopDongRepository.existsByPhongTro_IdAndTrangThaiAndIdNot(hd.getPhongTro().getId(), TrangThaiHopDong.DA_DUYET, hd.getId())) {
+                throw new BadRequestException("Phòng này đã có hợp đồng ĐÃ DUYỆT khác, không thể duyệt thêm!");
             }
         }
 
@@ -78,29 +105,27 @@ public class HopDongService {
         if (hd.getPhongTro() != null) {
             PhongTro p = hd.getPhongTro();
             
-            if ("ĐÃ_DUYỆT".equals(trangThaiMoi)) {
-                p.setTrangThai("Đã thuê");
+            if (trangThaiMoi == TrangThaiHopDong.DA_DUYET) {
+                p.setTrangThai(TrangThaiPhong.DA_THUE);
                 phongTroRepository.save(p);
 
-                 List<HopDong> danhSachCungPhong = hopDongRepository.findByPhongTro_Id(p.getId());
-                for (HopDong hopDongKhac : danhSachCungPhong) {
-                    if (!hopDongKhac.getId().equals(hd.getId()) && "CHỜ_DUYỆT".equals(hopDongKhac.getTrangThai())) {
-                        hopDongKhac.setTrangThai("TỪ_CHỐI");
-                        hopDongRepository.save(hopDongKhac);
-                    }
-                }
+                int rejectedCount = hopDongRepository.tuChoiCacHopDongChoDuyetKhac(
+                        p.getId(), hd.getId(), TrangThaiHopDong.CHO_DUYET, TrangThaiHopDong.TU_CHOI);
+                
+                log.info("Đã dùng Bulk Update từ chối tự động {} hợp đồng khác của phòng {}", rejectedCount, p.getId());
             } 
-            else if (Arrays.asList("TỪ_CHỐI", "HỦY", "ĐÃ_KẾT_THÚC").contains(trangThaiMoi)) {
+            else if (Arrays.asList(TrangThaiHopDong.TU_CHOI, TrangThaiHopDong.HUY, TrangThaiHopDong.DA_KET_THUC).contains(trangThaiMoi)) {
                 boolean conNguoiKhacThue = hopDongRepository
-                        .existsByPhongTro_IdAndTrangThaiAndIdNot(p.getId(), "ĐÃ_DUYỆT", hd.getId());
+                        .existsByPhongTro_IdAndTrangThaiAndIdNot(p.getId(), TrangThaiHopDong.DA_DUYET, hd.getId());
                 
                 if (!conNguoiKhacThue) {
-                    p.setTrangThai("Trống");
+                    p.setTrangThai(TrangThaiPhong.TRONG);
                     phongTroRepository.save(p);
                 }
             }
         }
 
+        log.info("User {} chuyển trạng thái hợp đồng ID {} thành {}", currentUser.getUsername(), hopDongId, trangThaiMoi);
         return hopDongRepository.save(hd);
     }
 }

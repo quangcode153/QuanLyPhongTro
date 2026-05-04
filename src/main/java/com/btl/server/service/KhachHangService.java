@@ -3,6 +3,8 @@ package com.btl.server.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,8 @@ import com.btl.server.repository.HopDongRepository;
 @Service
 public class KhachHangService {
 
+    private static final Logger log = LoggerFactory.getLogger(KhachHangService.class);
+
     private final KhachHangRepository khachHangRepository;
     private final TaiKhoanRepository taiKhoanRepository;
     private final HopDongRepository hopDongRepository;
@@ -34,9 +38,11 @@ public class KhachHangService {
     }
 
     public List<KhachHang> getAllKhachHang() {
+        // Cảnh báo: Tránh dùng findAll() nếu dữ liệu quá lớn, nên dùng Pagination giống TaiKhoan
         return khachHangRepository.findAll();
     }
 
+    @Transactional
     public KhachHang saveKhach(KhachHang khachHang) {
         return khachHangRepository.save(khachHang);
     }
@@ -57,7 +63,7 @@ public class KhachHangService {
     }
 
     public HoSoResponseDTO layHoSoCaNhan(String username) {
-        TaiKhoan user = taiKhoanRepository.findByUsername(username)
+       TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng!"));
 
         KhachHang hoSo = khachHangRepository.findByTaiKhoan(user)
@@ -67,7 +73,7 @@ public class KhachHangService {
     }
 
     public HoSoResponseDTO layHoSoTheoId(Long id, String currentUsername) {
-        TaiKhoan currentUser = taiKhoanRepository.findByUsername(currentUsername)
+        TaiKhoan currentUser = taiKhoanRepository.findByUsername(currentUsername.toLowerCase())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại!"));
 
          TaiKhoan targetUser = taiKhoanRepository.findById(id)
@@ -79,6 +85,7 @@ public class KhachHangService {
         if (!"ROLE_ADMIN".equals(currentUser.getRole())) {
             boolean isMyTenant = hopDongRepository.existsByKhachHang_IdAndPhongTro_ChuTroId(hoSo.getId(), currentUser.getId());
             if (!isMyTenant) {
+                log.warn("Security Alert: User {} cố gắng truy cập trái phép hồ sơ khách hàng ID: {}", currentUser.getUsername(), id);
                 throw new ForbiddenException("Cảnh báo bảo mật: Bạn không có quyền xem hồ sơ của khách hàng này!");
             }
         }
@@ -88,17 +95,20 @@ public class KhachHangService {
 
     @Transactional
     public HoSoResponseDTO capNhatHoSoCaNhan(String username, CapNhatHoSoDTO dto) {
-        TaiKhoan user = taiKhoanRepository.findByUsername(username)
+        TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng!"));
 
         validateCccd(dto.getSoCccd(), user.getId());
 
         KhachHang hoSo = buildOrUpdateHoSo(user, dto);
 
+        log.info("Cập nhật hồ sơ thành công cho user: {}", user.getUsername());
         return new HoSoResponseDTO(khachHangRepository.save(hoSo));
     }
 
     private void validateCccd(String cccd, Long userId) {
+        if (cccd == null || cccd.trim().isEmpty()) return;
+        
         khachHangRepository.findBySoCccd(cccd).ifPresent(kh -> {
             if (kh.getTaiKhoan() != null && !kh.getTaiKhoan().getId().equals(userId)) {
                 throw new BadRequestException("Số CCCD đã được đăng ký cho một tài khoản khác!");

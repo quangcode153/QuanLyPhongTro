@@ -1,6 +1,9 @@
 package com.btl.server.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,7 +15,9 @@ import com.btl.server.entity.KhachHang;
 import com.btl.server.repository.TaiKhoanRepository;
 import com.btl.server.security.JwtService;
 import com.btl.server.dto.AuthRequestDTO;
+import com.btl.server.exception.NotFoundException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import java.security.Principal;
@@ -25,29 +30,50 @@ import java.util.Optional;
 @RequestMapping("/api/tai-khoan")
 public class TaiKhoanController {
 
-    @Autowired
-    private TaiKhoanRepository taiKhoanRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtService jwtService;
-
-    // Chống Timing Attack - Rất chuẩn!
+    private static final Logger log = LoggerFactory.getLogger(TaiKhoanController.class);
     private final String BCRYPT_DUMMY_HASH = "$2a$10$wTf2E/.n./l5.f.P./R7l.y0r.2X/n.O.m.r.y.Q.t.Q.O.m.X.Y.m.C";
 
+    private final TaiKhoanRepository taiKhoanRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    public TaiKhoanController(TaiKhoanRepository taiKhoanRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+        this.taiKhoanRepository = taiKhoanRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody AuthRequestDTO request) {
+    public ResponseEntity<?> login(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
 
-        Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(request.getUsername());
+        String cleanUsername = request.getUsername().trim().toLowerCase();
+        String clientIp = httpRequest.getRemoteAddr();
 
-        String hashToCheck = userOpt.isPresent() ? userOpt.get().getPassword() : BCRYPT_DUMMY_HASH;
+        Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
+        
+        TaiKhoan userToVerify = userOpt.orElseGet(() -> {
+            TaiKhoan fake = new TaiKhoan();
+            fake.setPassword(BCRYPT_DUMMY_HASH);
+            return fake;
+        });
 
-        boolean isPasswordMatch = passwordEncoder.matches(request.getPassword(), hashToCheck);
+        boolean isPasswordMatch = passwordEncoder.matches(request.getPassword(), userToVerify.getPassword());
 
-        if (userOpt.isPresent() && isPasswordMatch) {
+        if (isPasswordMatch && userOpt.isPresent()) {
             TaiKhoan user = userOpt.get();
+
+            if (user.isLocked()) {
+              log.warn("Login blocked (Account Locked). IP: {}", clientIp);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Tài khoản của bạn đã bị khóa bởi Quản trị viên!"));
+            }
+
+            if (user.getRole() == null || user.getRole().trim().isEmpty()) {
+                log.error("Login failed (Invalid Role Data) for user ID: {}", user.getId());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("message", "Dữ liệu phân quyền bị lỗi. Vui lòng liên hệ Admin!"));
+            }
+
             String token = jwtService.generateToken(user.getUsername(), user.getRole());
 
             Map<String, String> response = new HashMap<>();
@@ -55,47 +81,50 @@ public class TaiKhoanController {
             response.put("role", user.getRole());
             response.put("message", "Đăng nhập thành công!");
 
+            log.info("Login success: user_id={}, ip={}", user.getId(), clientIp);
             return ResponseEntity.ok(response);
         }
 
-        Map<String, String> error = new HashMap<>();
-        error.put("message", "Sai tên đăng nhập hoặc mật khẩu!");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+         log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "Sai tên đăng nhập hoặc mật khẩu!"));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody AuthRequestDTO request) {
-
-        if (taiKhoanRepository.findByUsername(request.getUsername()).isPresent()) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Tên đăng nhập đã tồn tại! Vui lòng chọn tên khác.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    public ResponseEntity<?> register(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
+        String cleanUsername = request.getUsername().trim().toLowerCase();
+        
+        if (taiKhoanRepository.findByUsername(cleanUsername).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Tên đăng nhập đã tồn tại! Vui lòng chọn tên khác."));
         }
 
         TaiKhoan taiKhoanMoi = new TaiKhoan();
-        taiKhoanMoi.setUsername(request.getUsername());
+        taiKhoanMoi.setUsername(cleanUsername);
         taiKhoanMoi.setPassword(passwordEncoder.encode(request.getPassword()));
-
-         taiKhoanMoi.setRole("ROLE_USER");
+        
+               String reqRole = request.getRole(); 
+        if (reqRole == null || reqRole.trim().isEmpty()) {
+            reqRole = "ROLE_USER";
+        }
+        taiKhoanMoi.setRole(reqRole);
 
         KhachHang hoSoRong = new KhachHang();
-        hoSoRong.setHoTen(request.getUsername());
-
+        hoSoRong.setHoTen(cleanUsername);
         hoSoRong.setTaiKhoan(taiKhoanMoi);
         taiKhoanMoi.setKhachHang(hoSoRong);
 
         taiKhoanRepository.save(taiKhoanMoi);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Đăng ký tài khoản thành công!");
-        return ResponseEntity.ok(response);
+        log.info("New user registered successfully: Hash={}, IP={}", cleanUsername.hashCode(), httpRequest.getRemoteAddr());
+        return ResponseEntity.ok(Map.of("message", "Đăng ký tài khoản thành công!"));
     }
 
     @GetMapping("/me")
     public ResponseEntity<?> layThongTinCaNhan(Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(principal.getName());
+        Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(principal.getName().toLowerCase());
         if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         TaiKhoan user = userOpt.get();
@@ -109,31 +138,17 @@ public class TaiKhoanController {
 
     @GetMapping("/chu-tro")
     public ResponseEntity<?> layDanhSachChuTro() {
-        List<Map<String, Object>> danhSachChuTro = taiKhoanRepository.findAll().stream()
-                .filter(tk -> "ROLE_LANDLORD".equals(tk.getRole()))
-                .map(tk -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", tk.getId());
-                    map.put("username", tk.getUsername());
-                    
-                    if (tk.getKhachHang() != null) {
-                        map.put("hoTen", tk.getKhachHang().getHoTen());
-                    }
-                    return map;
-                }).toList();
-
+        // 🔥 TỐI ƯU 4: Fetch siêu tốc từ Database lên, bỏ qua toàn bộ quan hệ rườm rà
+        List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
         return ResponseEntity.ok(danhSachChuTro);
     }
 
     @GetMapping("/chu-tro/{id}/chi-tiet")
     public ResponseEntity<?> layChiTietChuTro(@PathVariable Long id) {
-        Optional<TaiKhoan> tkOpt = taiKhoanRepository.findById(id);
+        TaiKhoan tk = taiKhoanRepository.findById(id)
+                .filter(t -> "ROLE_LANDLORD".equals(t.getRole()))
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy dữ liệu chủ trọ"));
         
-        if (tkOpt.isEmpty() || !"ROLE_LANDLORD".equals(tkOpt.get().getRole())) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy dữ liệu chủ trọ");
-        }
-        
-        TaiKhoan tk = tkOpt.get();
         Map<String, Object> map = new HashMap<>();
         map.put("id", tk.getId());
         map.put("username", tk.getUsername());
@@ -143,7 +158,6 @@ public class TaiKhoanController {
             map.put("soDienThoai", tk.getKhachHang().getSoDienThoai());
             map.put("email", tk.getKhachHang().getEmail());
             
-            // Logic verify CCCD
             String cccd = tk.getKhachHang().getSoCccd();
             boolean isVerified = (cccd != null && !cccd.trim().isEmpty());
             map.put("isVerified", isVerified);
@@ -154,23 +168,57 @@ public class TaiKhoanController {
         return ResponseEntity.ok(map);
     }
 
-     @GetMapping("/admin/danh-sach-tai-khoan")
+    @GetMapping("/admin/danh-sach-tai-khoan")
     @PreAuthorize("hasRole('ADMIN')") 
-    public ResponseEntity<?> layDanhSachNguoiDung() {
-        List<Map<String, Object>> anToanList = taiKhoanRepository.findAll().stream()
-                .map(tk -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", tk.getId());
-                    map.put("username", tk.getUsername());
-                    map.put("role", tk.getRole());
-                    if(tk.getKhachHang() != null && tk.getKhachHang().getHoTen() != null) {
-                         map.put("hoTen", tk.getKhachHang().getHoTen());
-                    } else {
-                         map.put("hoTen", "");
-                    }
-                    return map;
-                }).toList();
+    public ResponseEntity<?> layDanhSachNguoiDung(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        Page<TaiKhoan> taiKhoanPage = taiKhoanRepository.findAll(PageRequest.of(page, size));
+        
+        List<Map<String, Object>> content = taiKhoanPage.stream().map(tk -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", tk.getId());
+            map.put("username", tk.getUsername());
+            map.put("role", tk.getRole());
+            map.put("locked", tk.isLocked()); 
+            map.put("hoTen", tk.getKhachHang() != null && tk.getKhachHang().getHoTen() != null ? tk.getKhachHang().getHoTen() : "");
+            return map;
+        }).toList();
 
-        return ResponseEntity.ok(anToanList);
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", content);
+        response.put("currentPage", taiKhoanPage.getNumber());
+        response.put("totalItems", taiKhoanPage.getTotalElements());
+        response.put("totalPages", taiKhoanPage.getTotalPages());
+
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdmin() {
+        return taiKhoanRepository.findFirstByRole("ROLE_ADMIN")
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+     
+    @PutMapping("/admin/{id}/toggle-lock")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleLockUser(@PathVariable Long id, HttpServletRequest request) {
+        TaiKhoan tk = taiKhoanRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy tài khoản"));
+         
+        tk.setLocked(!tk.isLocked());
+        taiKhoanRepository.save(tk);
+         
+        log.info("Admin toggled lock status for user ID: {}. New Status: {}, IP: {}", id, tk.isLocked(), request.getRemoteAddr());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", tk.getId());
+        response.put("locked", tk.isLocked());
+        response.put("message", tk.isLocked() ? "Đã khóa tài khoản!" : "Đã mở khóa tài khoản!");
+
+        return ResponseEntity.ok(response);
     }
 }

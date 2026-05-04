@@ -19,7 +19,7 @@ public class ChatController {
     private TinNhanRepository tinNhanRepository;
 
     @GetMapping("/api/tin-nhan/{user1}/{user2}")
-    public List<TinNhan> layLichSuChat(@PathVariable Integer user1, @PathVariable Integer user2) {
+    public List<TinNhan> layLichSuChat(@PathVariable Long user1, @PathVariable Long user2) {
         return tinNhanRepository.timLichSuChat(user1, user2);
     }
 

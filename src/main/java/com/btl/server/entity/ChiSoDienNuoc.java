@@ -9,7 +9,7 @@ public class ChiSoDienNuoc {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "thang")
     private Integer thang;
@@ -34,8 +34,8 @@ public class ChiSoDienNuoc {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private PhongTro phongTro;
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public Integer getThang() { return thang; }
     public void setThang(Integer thang) { this.thang = thang; }

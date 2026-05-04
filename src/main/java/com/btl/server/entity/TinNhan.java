@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public class TinNhan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "nguoi_gui_id")
     private Integer nguoiGuiId;
@@ -22,8 +22,8 @@ public class TinNhan {
     @Column(name = "thoi_gian")
     private LocalDateTime thoiGian = LocalDateTime.now();
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public Integer getNguoiGuiId() { return nguoiGuiId; }
     public void setNguoiGuiId(Integer nguoiGuiId) { this.nguoiGuiId = nguoiGuiId; }
     public Integer getNguoiNhanId() { return nguoiNhanId; }

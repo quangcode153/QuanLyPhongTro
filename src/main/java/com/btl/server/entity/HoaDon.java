@@ -1,7 +1,13 @@
 package com.btl.server.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.btl.server.enums.TrangThaiHoaDon;
 
 @Entity
 @Table(name = "hoa_don")
@@ -9,27 +15,35 @@ public class HoaDon {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
+    @NotNull(message = "Thiếu thông tin tháng!")
+    @Min(value = 1, message = "Tháng không hợp lệ!")
+    @Max(value = 12, message = "Tháng không hợp lệ!")
     @Column(name = "thang")
     private Integer thang;
 
+    @NotNull(message = "Thiếu thông tin năm!")
+    @Min(value = 2000, message = "Năm không hợp lệ!")
     @Column(name = "nam")
     private Integer nam;
 
+   @NotNull(message = "Chưa có tổng tiền!")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Tổng tiền không được là số âm!")
     @Column(name = "tong_tien")
-    private Double tongTien;
+    private BigDecimal tongTien;
 
-    @Column(name = "trang_thai")
-    private String trangThai;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trang_thai", nullable = false)
+    private TrangThaiHoaDon trangThai = TrangThaiHoaDon.CHUA_THANH_TOAN;
 
-    @ManyToOne
-    @JoinColumn(name = "phong_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @ManyToOne(fetch = FetchType.LAZY) 
+    @JoinColumn(name = "phong_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "hoaDons"})
     private PhongTro phongTro;
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+     public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     public Integer getThang() { return thang; }
     public void setThang(Integer thang) { this.thang = thang; }
@@ -37,11 +51,11 @@ public class HoaDon {
     public Integer getNam() { return nam; }
     public void setNam(Integer nam) { this.nam = nam; }
 
-    public Double getTongTien() { return tongTien; }
-    public void setTongTien(Double tongTien) { this.tongTien = tongTien; }
+    public BigDecimal getTongTien() { return tongTien; }
+    public void setTongTien(BigDecimal tongTien) { this.tongTien = tongTien; }
 
-    public String getTrangThai() { return trangThai; }
-    public void setTrangThai(String trangThai) { this.trangThai = trangThai; }
+    public TrangThaiHoaDon getTrangThai() { return trangThai; }
+    public void setTrangThai(TrangThaiHoaDon trangThai) { this.trangThai = trangThai; }
 
     public PhongTro getPhongTro() { return phongTro; }
     public void setPhongTro(PhongTro phongTro) { this.phongTro = phongTro; }
