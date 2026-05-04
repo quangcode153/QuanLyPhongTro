@@ -17,18 +17,15 @@ public class PhongTro {
     @Column(name = "ten_phong")
     private String tenPhong;
 
-    // 🔥 TỐI ƯU 1: Đồng bộ sang BigDecimal và dùng @DecimalMin
     @NotNull(message = "Chưa nhập giá phòng!")
     @DecimalMin(value = "0.0", inclusive = true, message = "Giá phòng không được là số âm!")
     @Column(name = "gia_phong")
     private BigDecimal giaPhong;
 
-    // 🔥 TỐI ƯU 2: Ép dùng Enum và set mặc định là TRỐNG
     @Enumerated(EnumType.STRING)
     @Column(name = "trang_thai", nullable = false)
     private TrangThaiPhong trangThai = TrangThaiPhong.TRONG;
 
-    // 🔥 TỐI ƯU 3: Cấu hình TEXT để chủ trọ có thể viết mô tả siêu dài
     @Column(name = "mo_ta", columnDefinition = "TEXT")
     private String moTa;
 

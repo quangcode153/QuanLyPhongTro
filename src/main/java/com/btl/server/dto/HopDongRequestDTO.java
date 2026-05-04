@@ -18,7 +18,6 @@ public class HopDongRequestDTO {
     @Min(value = 0, message = "Tiền cọc không được là số âm!")
     private BigDecimal tienCoc;
 
-    // Getters and Setters
     public Long getPhongTroId() { return phongTroId; }
     public void setPhongTroId(Long phongTroId) { this.phongTroId = phongTroId; }
     public LocalDate getNgayBatDau() { return ngayBatDau; }
