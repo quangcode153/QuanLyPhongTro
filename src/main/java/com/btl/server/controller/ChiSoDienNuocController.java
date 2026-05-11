@@ -33,4 +33,24 @@ public class ChiSoDienNuocController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
         }
     }
+
+    @PutMapping("/cap-nhat/{hoaDonId}")
+    public ResponseEntity<?> capNhatSo(@PathVariable Long hoaDonId, @RequestBody ChiSoDienNuoc chiSoMoi) {
+        try {
+            PhieuTinhTienDTO ketQua = chiSoService.capNhatChiSoVaTinhTien(hoaDonId, chiSoMoi);
+            return ResponseEntity.ok(ketQua);
+        } catch (RuntimeException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("trangThai", "LỖI CẬP NHẬT");
+            errorResponse.put("thongBao", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
+
+    @GetMapping("/chi-so")
+    public ResponseEntity<ChiSoDienNuoc> layChiSo(@RequestParam Long phongId, @RequestParam Integer thang, @RequestParam Integer nam) {
+        return chiSoService.layChiSoDienNuoc(phongId, thang, nam)
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }

@@ -69,7 +69,11 @@ public class ChiSoDienNuocService {
         hoaDonMoi.setPhongTro(phong);
         hoaDonMoi.setThang(daLuu.getThang());
         hoaDonMoi.setNam(daLuu.getNam());
+        hoaDonMoi.setTienPhong(giaPhong);
+        hoaDonMoi.setTienDien(tienDien);
+        hoaDonMoi.setTienNuoc(tienNuoc);
         hoaDonMoi.setTongTien(tongTien);
+        
         
         hoaDonMoi.setTrangThai(TrangThaiHoaDon.CHUA_THANH_TOAN); 
         
@@ -88,5 +92,61 @@ public class ChiSoDienNuocService {
 
         log.info("Chốt số điện nước thành công cho phòng ID: {}, Tháng: {}/{}", idPhong, thang, nam);
         return phieu;
+    }
+
+    @Transactional
+    public PhieuTinhTienDTO capNhatChiSoVaTinhTien(Long hoaDonId, ChiSoDienNuoc chiSoMoi) {
+        HoaDon hd = hoaDonRepository.findById(hoaDonId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy hóa đơn!"));
+
+        if (hd.getTrangThai() == TrangThaiHoaDon.DA_THANH_TOAN) {
+            throw new BadRequestException("Hóa đơn đã được thanh toán, không thể thay đổi chỉ số điện nước!");
+        }
+
+        if (chiSoMoi.getSoDienMoi() < chiSoMoi.getSoDienCu() || chiSoMoi.getSoNuocMoi() < chiSoMoi.getSoNuocCu()) {
+            throw new BadRequestException("Chỉ số mới không được nhỏ hơn chỉ số cũ!");
+        }
+
+        ChiSoDienNuoc chiSoHienTai = chiSoRepo.findByPhongTroIdAndThangAndNam(hd.getPhongTro().getId(), hd.getThang(), hd.getNam())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy dữ liệu điện nước của tháng này!"));
+
+        chiSoHienTai.setSoDienCu(chiSoMoi.getSoDienCu());
+        chiSoHienTai.setSoDienMoi(chiSoMoi.getSoDienMoi());
+        chiSoHienTai.setSoNuocCu(chiSoMoi.getSoNuocCu());
+        chiSoHienTai.setSoNuocMoi(chiSoMoi.getSoNuocMoi());
+
+        ChiSoDienNuoc daLuu = chiSoRepo.save(chiSoHienTai);
+
+        int soDienDung = daLuu.getSoDienMoi() - daLuu.getSoDienCu();
+        int soNuocDung = daLuu.getSoNuocMoi() - daLuu.getSoNuocCu();
+        
+        BigDecimal tienDien = GIA_DIEN.multiply(BigDecimal.valueOf(soDienDung));
+        BigDecimal tienNuoc = GIA_NUOC.multiply(BigDecimal.valueOf(soNuocDung));
+        BigDecimal giaPhong = hd.getPhongTro().getGiaPhong();
+        BigDecimal tongTien = giaPhong.add(tienDien).add(tienNuoc);
+
+        hd.setTienDien(tienDien);
+        hd.setTienNuoc(tienNuoc);
+        hd.setTongTien(tongTien);
+        
+        hoaDonRepository.save(hd);
+
+        PhieuTinhTienDTO phieu = new PhieuTinhTienDTO();
+        phieu.setPhongId(hd.getPhongTro().getId());
+        phieu.setThang(daLuu.getThang());
+        phieu.setNam(daLuu.getNam());
+        phieu.setGiaPhong(giaPhong);
+        phieu.setSoDienDung(soDienDung);
+        phieu.setTienDien(tienDien);
+        phieu.setSoNuocDung(soNuocDung);
+        phieu.setTienNuoc(tienNuoc);
+        phieu.setTongTien(tongTien);
+
+        log.info("Cập nhật số điện nước thành công cho hóa đơn ID: {}", hoaDonId);
+        return phieu;
+    }
+
+    public java.util.Optional<ChiSoDienNuoc> layChiSoDienNuoc(Long phongId, Integer thang, Integer nam) {
+        return chiSoRepo.findByPhongTroIdAndThangAndNam(phongId, thang, nam);
     }
 }

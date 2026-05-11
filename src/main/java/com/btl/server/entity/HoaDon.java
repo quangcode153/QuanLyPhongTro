@@ -13,7 +13,7 @@ import com.btl.server.enums.TrangThaiHoaDon;
 @Table(name = "hoa_don")
 public class HoaDon {
 
-    @Id
+     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -28,7 +28,7 @@ public class HoaDon {
     @Column(name = "nam")
     private Integer nam;
 
-   @NotNull(message = "Chưa có tổng tiền!")
+    @NotNull(message = "Chưa có tổng tiền!")
     @DecimalMin(value = "0.0", inclusive = true, message = "Tổng tiền không được là số âm!")
     @Column(name = "tong_tien")
     private BigDecimal tongTien;
@@ -37,12 +37,21 @@ public class HoaDon {
     @Column(name = "trang_thai", nullable = false)
     private TrangThaiHoaDon trangThai = TrangThaiHoaDon.CHUA_THANH_TOAN;
 
-    @ManyToOne(fetch = FetchType.LAZY) 
+    @Column(name = "tien_phong")
+    private BigDecimal tienPhong;
+
+    @Column(name = "tien_dien")
+    private BigDecimal tienDien;
+
+    @Column(name = "tien_nuoc")
+    private BigDecimal tienNuoc;
+
+    @ManyToOne(fetch = FetchType.LAZY) // 🔥 Nên dùng LAZY để tối ưu performance
     @JoinColumn(name = "phong_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "hoaDons"})
     private PhongTro phongTro;
 
-     public Long getId() { return id; }
+    public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public Integer getThang() { return thang; }
@@ -53,6 +62,15 @@ public class HoaDon {
 
     public BigDecimal getTongTien() { return tongTien; }
     public void setTongTien(BigDecimal tongTien) { this.tongTien = tongTien; }
+
+    public BigDecimal getTienPhong() { return tienPhong; }
+    public void setTienPhong(BigDecimal tienPhong) { this.tienPhong = tienPhong; }
+
+    public BigDecimal getTienDien() { return tienDien; }
+    public void setTienDien(BigDecimal tienDien) { this.tienDien = tienDien; }
+
+    public BigDecimal getTienNuoc() { return tienNuoc; }
+    public void setTienNuoc(BigDecimal tienNuoc) { this.tienNuoc = tienNuoc; }
 
     public TrangThaiHoaDon getTrangThai() { return trangThai; }
     public void setTrangThai(TrangThaiHoaDon trangThai) { this.trangThai = trangThai; }

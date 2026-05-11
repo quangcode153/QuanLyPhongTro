@@ -24,10 +24,11 @@ public class HoaDonController {
         this.taiKhoanRepository = taiKhoanRepository;
     }
 
-    @DeleteMapping("/xoa/{id}")
-    public ResponseEntity<Void> xoaHoaDon(@PathVariable Long id) {
-        hoaDonService.xoaHoaDonBiSai(id);
-        return ResponseEntity.noContent().build();
+    // Nút xóa đã được loại bỏ để bảo vệ tính minh bạch
+
+    @GetMapping("/chu-tro/{chuTroId}")
+    public ResponseEntity<List<HoaDon>> layHoaDonTheoChuTro(@PathVariable Long chuTroId) {
+        return ResponseEntity.ok(hoaDonService.layHoaDonCuaChuTro(chuTroId));
     }
 
     @GetMapping("/me")
@@ -36,5 +37,14 @@ public class HoaDonController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy user!"));
             
         return ResponseEntity.ok(hoaDonService.layDanhSachHoaDonCuaKhach(tk.getId()));
+    }
+
+    @PostMapping("/{id}/thanh-toan")
+    public ResponseEntity<Void> thanhToan(@PathVariable Long id, Principal principal) {
+        TaiKhoan tk = taiKhoanRepository.findByUsername(principal.getName())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy user!"));
+            
+        hoaDonService.thanhToanHoaDon(id, tk.getId());
+        return ResponseEntity.ok().build();
     }
 }
