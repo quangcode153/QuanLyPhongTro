@@ -24,8 +24,6 @@ public class HoaDonController {
         this.taiKhoanRepository = taiKhoanRepository;
     }
 
-    // Nút xóa đã được loại bỏ để bảo vệ tính minh bạch
-
     @GetMapping("/chu-tro/{chuTroId}")
     public ResponseEntity<List<HoaDon>> layHoaDonTheoChuTro(@PathVariable Long chuTroId) {
         return ResponseEntity.ok(hoaDonService.layHoaDonCuaChuTro(chuTroId));
@@ -46,5 +44,11 @@ public class HoaDonController {
             
         hoaDonService.thanhToanHoaDon(id, tk.getId());
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> xoaHoaDon(@PathVariable Long id) {
+        hoaDonService.xoaHoaDonBiSai(id);
+        return ResponseEntity.noContent().build();
     }
 }

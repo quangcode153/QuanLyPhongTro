@@ -39,6 +39,15 @@ public class KhachHang {
 	@Column(name = "dia_chi_thuong_tru", columnDefinition = "TEXT")
 	private String diaChiThuongTru;
 
+	@Column(name = "ten_ngan_hang")
+	private String tenNganHang;
+
+	@Column(name = "so_tai_khoan")
+	private String soTaiKhoan;
+
+	@Column(name = "chu_tai_khoan")
+	private String chuTaiKhoan;
+
 	public Long getId() {
 		return id;
 	}
@@ -110,4 +119,13 @@ public class KhachHang {
 	public void setDiaChiThuongTru(String diaChiThuongTru) {
 		this.diaChiThuongTru = diaChiThuongTru;
 	}
+
+	public String getTenNganHang() { return tenNganHang; }
+	public void setTenNganHang(String tenNganHang) { this.tenNganHang = tenNganHang; }
+
+	public String getSoTaiKhoan() { return soTaiKhoan; }
+	public void setSoTaiKhoan(String soTaiKhoan) { this.soTaiKhoan = soTaiKhoan; }
+
+	public String getChuTaiKhoan() { return chuTaiKhoan; }
+	public void setChuTaiKhoan(String chuTaiKhoan) { this.chuTaiKhoan = chuTaiKhoan; }
 }

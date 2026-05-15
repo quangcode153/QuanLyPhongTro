@@ -38,8 +38,7 @@ public class KhachHangService {
     }
 
     public List<KhachHang> getAllKhachHang() {
-        // Cảnh báo: Tránh dùng findAll() nếu dữ liệu quá lớn, nên dùng Pagination giống TaiKhoan
-        return khachHangRepository.findAll();
+                return khachHangRepository.findAll();
     }
 
     @Transactional
@@ -63,7 +62,7 @@ public class KhachHangService {
     }
 
     public HoSoResponseDTO layHoSoCaNhan(String username) {
-       TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
+                TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng!"));
 
         KhachHang hoSo = khachHangRepository.findByTaiKhoan(user)
@@ -82,7 +81,7 @@ public class KhachHangService {
         KhachHang hoSo = khachHangRepository.findByTaiKhoan(targetUser)
                 .orElseThrow(() -> new NotFoundException("Khách hàng này chưa cập nhật hồ sơ!"));
 
-        if (!"ROLE_ADMIN".equals(currentUser.getRole())) {
+        if (!"ROLE_ADMIN".equals(currentUser.getRole()) && !currentUser.getId().equals(hoSo.getId())) {
             boolean isMyTenant = hopDongRepository.existsByKhachHang_IdAndPhongTro_ChuTroId(hoSo.getId(), currentUser.getId());
             if (!isMyTenant) {
                 log.warn("Security Alert: User {} cố gắng truy cập trái phép hồ sơ khách hàng ID: {}", currentUser.getUsername(), id);
@@ -131,6 +130,9 @@ public class KhachHangService {
         hoSo.setSoDienThoai(dto.getSoDienThoai());
         hoSo.setEmail(dto.getEmail());
         hoSo.setDiaChiThuongTru(dto.getDiaChiThuongTru());
+        hoSo.setTenNganHang(dto.getTenNganHang());
+        hoSo.setSoTaiKhoan(dto.getSoTaiKhoan());
+        hoSo.setChuTaiKhoan(dto.getChuTaiKhoan());
 
         return hoSo;
     }

@@ -14,6 +14,8 @@ import com.btl.server.enums.TrangThaiPhong;
 import com.btl.server.exception.NotFoundException;
 import com.btl.server.repository.HopDongRepository;
 import com.btl.server.repository.PhongTroRepository;
+import com.btl.server.repository.HoaDonRepository;
+import com.btl.server.repository.ChiSoDienNuocRepository;
 
 @Service
 public class PhongTroService {
@@ -22,10 +24,17 @@ public class PhongTroService {
 
     private final PhongTroRepository phongTroRepository;
     private final HopDongRepository hopDongRepository;
+    private final HoaDonRepository hoaDonRepository;
+    private final ChiSoDienNuocRepository chiSoDienNuocRepository;
 
-    public PhongTroService(PhongTroRepository phongTroRepository, HopDongRepository hopDongRepository) {
+    public PhongTroService(PhongTroRepository phongTroRepository, 
+                           HopDongRepository hopDongRepository,
+                           HoaDonRepository hoaDonRepository,
+                           ChiSoDienNuocRepository chiSoDienNuocRepository) {
         this.phongTroRepository = phongTroRepository;
         this.hopDongRepository = hopDongRepository;
+        this.hoaDonRepository = hoaDonRepository;
+        this.chiSoDienNuocRepository = chiSoDienNuocRepository;
     }
 
     public List<PhongTro> getAllPhongs() {
@@ -36,7 +45,7 @@ public class PhongTroService {
         return phongTroRepository.save(phongTro);
     }
 
-    public PhongTro getPhongById(Long id) {
+        public PhongTro getPhongById(Long id) {
         return phongTroRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng trọ có ID: " + id));
     }
@@ -45,7 +54,7 @@ public class PhongTroService {
         return phongTroRepository.findByChuTroId(chuTroId);
     }
 
-   public List<PhongTro> timPhongTheoTrangThai(TrangThaiPhong trangThai) {
+        public List<PhongTro> timPhongTheoTrangThai(TrangThaiPhong trangThai) {
         return phongTroRepository.findByTrangThai(trangThai);
     }
 
@@ -53,7 +62,11 @@ public class PhongTroService {
         return phongTroRepository.findByTrangThaiAndGiaPhongLessThanEqual(trangThai, giaToiDa);
     }
 
-    @Transactional
+    public List<PhongTro> searchPhongTro(String tenPhong, BigDecimal giaToiThieu, BigDecimal giaToiDa, TrangThaiPhong trangThai) {
+        return phongTroRepository.searchPhongTro(tenPhong, giaToiThieu, giaToiDa, trangThai);
+    }
+
+        @Transactional
     public PhongTro capNhatTrangThaiPhong(Long id, TrangThaiPhong trangThaiMoi) {
         PhongTro existingPhong = getPhongById(id);
         existingPhong.setTrangThai(trangThaiMoi);
@@ -68,14 +81,19 @@ public class PhongTroService {
         return existingPhong;
     }
 
-    @Transactional
+        @Transactional
     public void deletePhong(Long id) {
         PhongTro existingPhong = getPhongById(id);
         
-        int count = hopDongRepository.ketThucHopDongTheoPhong(id, TrangThaiHopDong.DA_DUYET, TrangThaiHopDong.DA_KET_THUC);
-        hopDongRepository.ketThucHopDongTheoPhong(id, TrangThaiHopDong.CHO_DUYET, TrangThaiHopDong.HUY);
+        if (existingPhong.getTrangThai() == TrangThaiPhong.DA_THUE) {
+            throw new com.btl.server.exception.BadRequestException("Không thể xóa phòng đang có khách thuê! Vui lòng thanh lý hợp đồng trước.");
+        }
         
-        log.warn("Đã soft-delete (HỦY/KẾT THÚC) {} hợp đồng trước khi xóa phòng ID: {}", count, id);
+        chiSoDienNuocRepository.deleteByPhongTro_Id(id);
+        hoaDonRepository.deleteByPhongTro_Id(id);
+        hopDongRepository.deleteByPhongTro_Id(id);
+        
         phongTroRepository.delete(existingPhong);
+        log.info("Đã xóa sạch dữ liệu liên quan và phòng ID: {}", id);
     }
 }

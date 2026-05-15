@@ -32,25 +32,117 @@ public class PhongTro {
     @Column(name = "chu_tro_id", nullable = false)
     private Long chuTroId;
 
-    // ==========================
-    // GETTERS & SETTERS
-    // ==========================
-    
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @Column(name = "gia_dien")
+    private BigDecimal giaDien;
 
-    public String getTenPhong() { return tenPhong; }
-    public void setTenPhong(String tenPhong) { this.tenPhong = tenPhong; }
+    @Column(name = "gia_nuoc")
+    private BigDecimal giaNuoc;
 
-    public BigDecimal getGiaPhong() { return giaPhong; }
-    public void setGiaPhong(BigDecimal giaPhong) { this.giaPhong = giaPhong; }
+    @Column(name = "dia_chi")
+    private String diaChi;
 
-    public TrangThaiPhong getTrangThai() { return trangThai; }
-    public void setTrangThai(TrangThaiPhong trangThai) { this.trangThai = trangThai; }
+    @Column(name = "dien_tich")
+    private Double dienTich;
 
-    public String getMoTa() { return moTa; }
-    public void setMoTa(String moTa) { this.moTa = moTa; }
+    @Column(name = "hinh_anh", columnDefinition = "LONGTEXT")
+    private String hinhAnh;
 
-    public Long getChuTroId() { return chuTroId; }
-    public void setChuTroId(Long chuTroId) { this.chuTroId = chuTroId; }
+    @Column(name = "tien_coc")
+    private BigDecimal tienCoc;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTenPhong() {
+        return tenPhong;
+    }
+
+    public void setTenPhong(String tenPhong) {
+        this.tenPhong = tenPhong;
+    }
+
+    public BigDecimal getGiaPhong() {
+        return giaPhong;
+    }
+
+    public void setGiaPhong(BigDecimal giaPhong) {
+        this.giaPhong = giaPhong;
+    }
+
+    public TrangThaiPhong getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(TrangThaiPhong trangThai) {
+        this.trangThai = trangThai;
+    }
+
+    public String getMoTa() {
+        return moTa;
+    }
+
+    public void setMoTa(String moTa) {
+        this.moTa = moTa;
+    }
+
+    public Long getChuTroId() {
+        return chuTroId;
+    }
+
+    public void setChuTroId(Long chuTroId) {
+        this.chuTroId = chuTroId;
+    }
+
+    public BigDecimal getGiaDien() {
+        return giaDien;
+    }
+
+    public void setGiaDien(BigDecimal giaDien) {
+        this.giaDien = giaDien;
+    }
+
+    public BigDecimal getGiaNuoc() {
+        return giaNuoc;
+    }
+
+    public void setGiaNuoc(BigDecimal giaNuoc) {
+        this.giaNuoc = giaNuoc;
+    }
+
+    public String getDiaChi() {
+        return diaChi;
+    }
+
+    public void setDiaChi(String diaChi) {
+        this.diaChi = diaChi;
+    }
+
+    public Double getDienTich() {
+        return dienTich;
+    }
+
+    public void setDienTich(Double dienTich) {
+        this.dienTich = dienTich;
+    }
+
+    public String getHinhAnh() {
+        return hinhAnh;
+    }
+
+    public void setHinhAnh(String hinhAnh) {
+        this.hinhAnh = hinhAnh;
+    }
+
+    public BigDecimal getTienCoc() {
+        return tienCoc;
+    }
+
+    public void setTienCoc(BigDecimal tienCoc) {
+        this.tienCoc = tienCoc;
+    }
 }

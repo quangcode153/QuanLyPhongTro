@@ -12,6 +12,9 @@ public class HoSoResponseDTO {
     private String soDienThoai;
     private String email;
     private String diaChiThuongTru;
+    private String tenNganHang;
+    private String soTaiKhoan;
+    private String chuTaiKhoan;
 
     public HoSoResponseDTO(KhachHang entity) {
         this.id = entity.getId();
@@ -22,6 +25,9 @@ public class HoSoResponseDTO {
         this.soDienThoai = entity.getSoDienThoai();
         this.email = entity.getEmail();
         this.diaChiThuongTru = entity.getDiaChiThuongTru();
+        this.tenNganHang = entity.getTenNganHang();
+        this.soTaiKhoan = entity.getSoTaiKhoan();
+        this.chuTaiKhoan = entity.getChuTaiKhoan();
     }
 
     public Long getId() { return id; }
@@ -32,4 +38,7 @@ public class HoSoResponseDTO {
     public String getSoDienThoai() { return soDienThoai; }
     public String getEmail() { return email; }
     public String getDiaChiThuongTru() { return diaChiThuongTru; }
+    public String getTenNganHang() { return tenNganHang; }
+    public String getSoTaiKhoan() { return soTaiKhoan; }
+    public String getChuTaiKhoan() { return chuTaiKhoan; }
 }

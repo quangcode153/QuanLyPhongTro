@@ -20,7 +20,7 @@ public interface HopDongRepository extends JpaRepository<HopDong, Long> {
 
     boolean existsByKhachHangAndPhongTroAndTrangThai(TaiKhoan khachHang, PhongTro phongTro, TrangThaiHopDong trangThai);
 
-    @Modifying(clearAutomatically = true)
+        @Modifying(clearAutomatically = true)
     @Query("UPDATE HopDong h SET h.trangThai = :trangThaiMoi WHERE h.phongTro.id = :phongTroId AND h.id <> :hopDongIdDuocDuyet AND h.trangThai = :trangThaiCu")
     int tuChoiCacHopDongChoDuyetKhac(
             @Param("phongTroId") Long phongTroId, 
@@ -38,11 +38,14 @@ public interface HopDongRepository extends JpaRepository<HopDong, Long> {
 
     boolean existsByPhongTro_IdAndTrangThaiAndIdNot(Long phongTroId, TrangThaiHopDong trangThai, Long hopDongIdLoaiTru);
 
-   @Modifying(clearAutomatically = true)
+         @Modifying(clearAutomatically = true)
     @Query("UPDATE HopDong h SET h.trangThai = :ketThuc WHERE h.phongTro.id = :phongId AND h.trangThai = :daDuyet")
     int ketThucHopDongTheoPhong(@Param("phongId") Long phongId, 
                                 @Param("daDuyet") TrangThaiHopDong daDuyet, 
                                 @Param("ketThuc") TrangThaiHopDong ketThuc);
     
     boolean existsByKhachHang_IdAndPhongTro_ChuTroId(Long khachHangId, Long chuTroId);
+
+    @Modifying
+    void deleteByPhongTro_Id(Long phongId);
 }

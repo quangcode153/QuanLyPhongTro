@@ -1,6 +1,7 @@
 package com.btl.server.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -25,4 +26,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Long> {
 
     @Query("SELECT SUM(h.tongTien) FROM HoaDon h WHERE h.phongTro.chuTroId = :chuTroId AND h.trangThai = 'CHUA_THANH_TOAN'")
     java.math.BigDecimal sumTienChuaThanhToan(@Param("chuTroId") Long chuTroId);
+
+    @Modifying
+    void deleteByPhongTro_Id(Long phongId);
 }

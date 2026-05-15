@@ -9,14 +9,12 @@ public class CapNhatHoSoDTO {
     private String hoTen;
 
     @NotNull(message = "Ngày sinh không được để trống")
-    @Past(message = "Ngày sinh phải ở trong quá khứ") // Chặn luôn vụ sinh năm 2050
-    private LocalDate ngaySinh;
+    @Past(message = "Ngày sinh phải ở trong quá khứ")     private LocalDate ngaySinh;
 
     private String gioiTinh;
 
     @NotBlank(message = "Số CCCD không được để trống")
-    @Pattern(regexp = "^\\d{12}$", message = "CCCD phải đúng 12 chữ số") // Ép chuẩn form
-    private String soCccd;
+    @Pattern(regexp = "^\\d{12}$", message = "CCCD phải đúng 12 chữ số")     private String soCccd;
 
     @NotBlank(message = "Số điện thoại không được để trống")
     @Pattern(regexp = "^(0[3|5|7|8|9])+([0-9]{8})$", message = "Số điện thoại không hợp lệ")
@@ -28,8 +26,11 @@ public class CapNhatHoSoDTO {
     @NotBlank(message = "Địa chỉ thường trú không được để trống")
     private String diaChiThuongTru;
 
-    // --- GETTERS & SETTERS (Anh tự generate bằng IDE hoặc Lombok @Data nhé) ---
-    public String getHoTen() { return hoTen; }
+    private String tenNganHang;
+    private String soTaiKhoan;
+    private String chuTaiKhoan;
+
+        public String getHoTen() { return hoTen; }
     public void setHoTen(String hoTen) { this.hoTen = hoTen; }
     public LocalDate getNgaySinh() { return ngaySinh; }
     public void setNgaySinh(LocalDate ngaySinh) { this.ngaySinh = ngaySinh; }
@@ -43,4 +44,10 @@ public class CapNhatHoSoDTO {
     public void setEmail(String email) { this.email = email; }
     public String getDiaChiThuongTru() { return diaChiThuongTru; }
     public void setDiaChiThuongTru(String diaChiThuongTru) { this.diaChiThuongTru = diaChiThuongTru; }
+    public String getTenNganHang() { return tenNganHang; }
+    public void setTenNganHang(String tenNganHang) { this.tenNganHang = tenNganHang; }
+    public String getSoTaiKhoan() { return soTaiKhoan; }
+    public void setSoTaiKhoan(String soTaiKhoan) { this.soTaiKhoan = soTaiKhoan; }
+    public String getChuTaiKhoan() { return chuTaiKhoan; }
+    public void setChuTaiKhoan(String chuTaiKhoan) { this.chuTaiKhoan = chuTaiKhoan; }
 }

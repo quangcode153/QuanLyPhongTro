@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.btl.server.enums.AuthProvider;
 import java.util.Collection;
 import java.util.List;
 
@@ -19,11 +20,14 @@ public class TaiKhoan implements UserDetails {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @Column(nullable = false)
+    @Column
     private String password;
     
     @Column(nullable = false)
     private String role;
+
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider = AuthProvider.LOCAL;
 
     @OneToOne(mappedBy = "taiKhoan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @PrimaryKeyJoinColumn
@@ -47,10 +51,7 @@ public class TaiKhoan implements UserDetails {
         this.locked = locked; 
     }
 
-    // 🔥 FIX BẢO MẬT: Nối mạch biến locked với Spring Security
-    // Hàm này hỏi "Tài khoản CÓ KHÔNG BỊ KHÓA phải không?". 
-    // Nếu isLocked() là true (bị khóa) -> Trả về false (Không được phép đăng nhập)
-    @Override
+                @Override
     public boolean isAccountNonLocked() { 
         return !isLocked(); 
     }
@@ -64,7 +65,7 @@ public class TaiKhoan implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 
-    public Long getId() { return id; }
+                public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public String getUsername() { return username; }
@@ -73,12 +74,12 @@ public class TaiKhoan implements UserDetails {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getRole() { 
+        public String getRole() { 
         if (this.role == null) return null;
         return this.role.startsWith("ROLE_") ? this.role : "ROLE_" + this.role; 
     }
 
-    public void setRole(String role) { 
+        public void setRole(String role) { 
         if (role != null) {
             String upperRole = role.trim().toUpperCase();
             this.role = upperRole.startsWith("ROLE_") ? upperRole : "ROLE_" + upperRole;
@@ -89,4 +90,7 @@ public class TaiKhoan implements UserDetails {
 
     public KhachHang getKhachHang() { return khachHang; }
     public void setKhachHang(KhachHang khachHang) { this.khachHang = khachHang; }
+
+    public AuthProvider getProvider() { return provider; }
+    public void setProvider(AuthProvider provider) { this.provider = provider; }
 }

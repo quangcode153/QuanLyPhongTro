@@ -1,6 +1,7 @@
 package com.btl.server.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -88,13 +89,13 @@ public class HopDongService {
         HopDong hd = hopDongRepository.findById(hopDongId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hợp đồng!"));
 
-         if (!"ROLE_ADMIN".equals(currentUser.getRole())) {
+        if (!"ROLE_ADMIN".equals(currentUser.getRole())) {
              if (!hd.getPhongTro().getChuTroId().equals(currentUser.getId())) {
                 throw new ForbiddenException("Bạn không có quyền thao tác trên hợp đồng của khu trọ khác!");
             }
         }
 
-       if (trangThaiMoi == TrangThaiHopDong.DA_DUYET) {
+        if (trangThaiMoi == TrangThaiHopDong.DA_DUYET) {
             if (hopDongRepository.existsByPhongTro_IdAndTrangThaiAndIdNot(hd.getPhongTro().getId(), TrangThaiHopDong.DA_DUYET, hd.getId())) {
                 throw new BadRequestException("Phòng này đã có hợp đồng ĐÃ DUYỆT khác, không thể duyệt thêm!");
             }
@@ -114,7 +115,7 @@ public class HopDongService {
                 
                 log.info("Đã dùng Bulk Update từ chối tự động {} hợp đồng khác của phòng {}", rejectedCount, p.getId());
             } 
-            else if (Arrays.asList(TrangThaiHopDong.TU_CHOI, TrangThaiHopDong.HUY, TrangThaiHopDong.DA_KET_THUC).contains(trangThaiMoi)) {
+            else if (Arrays.asList(TrangThaiHopDong.TU_CHOI, TrangThaiHopDong.HUY, TrangThaiHopDong.DA_KET_THUC, TrangThaiHopDong.DA_THANH_LY).contains(trangThaiMoi)) {
                 boolean conNguoiKhacThue = hopDongRepository
                         .existsByPhongTro_IdAndTrangThaiAndIdNot(p.getId(), TrangThaiHopDong.DA_DUYET, hd.getId());
                 
@@ -126,6 +127,24 @@ public class HopDongService {
         }
 
         log.info("User {} chuyển trạng thái hợp đồng ID {} thành {}", currentUser.getUsername(), hopDongId, trangThaiMoi);
+        return hopDongRepository.save(hd);
+    }
+
+    @Transactional
+    public HopDong giaHanHopDong(Long id, LocalDate ngayKetThucMoi, TaiKhoan currentUser) {
+        HopDong hd = hopDongRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hợp đồng!"));
+
+        if (!"ROLE_ADMIN".equals(currentUser.getRole()) && !hd.getPhongTro().getChuTroId().equals(currentUser.getId())) {
+            throw new ForbiddenException("Không có quyền gia hạn hợp đồng này!");
+        }
+
+        if (ngayKetThucMoi != null && ngayKetThucMoi.isBefore(hd.getNgayBatDau())) {
+            throw new BadRequestException("Ngày kết thúc mới phải sau ngày bắt đầu!");
+        }
+
+        hd.setNgayKetThuc(ngayKetThucMoi);
+        log.info("Chủ trọ {} gia hạn hợp đồng {} đến ngày {}", currentUser.getUsername(), id, ngayKetThucMoi);
         return hopDongRepository.save(hd);
     }
 }

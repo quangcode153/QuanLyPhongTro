@@ -33,7 +33,7 @@ public class TaiKhoanController {
     private static final Logger log = LoggerFactory.getLogger(TaiKhoanController.class);
     private final String BCRYPT_DUMMY_HASH = "$2a$10$wTf2E/.n./l5.f.P./R7l.y0r.2X/n.O.m.r.y.Q.t.Q.O.m.X.Y.m.C";
 
-    private final TaiKhoanRepository taiKhoanRepository;
+        private final TaiKhoanRepository taiKhoanRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -46,7 +46,7 @@ public class TaiKhoanController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
 
-        String cleanUsername = request.getUsername().trim().toLowerCase();
+                String cleanUsername = request.getUsername().trim().toLowerCase();
         String clientIp = httpRequest.getRemoteAddr();
 
         Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
@@ -63,7 +63,7 @@ public class TaiKhoanController {
             TaiKhoan user = userOpt.get();
 
             if (user.isLocked()) {
-              log.warn("Login blocked (Account Locked). IP: {}", clientIp);
+                                log.warn("Login blocked (Account Locked). IP: {}", clientIp);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("message", "Tài khoản của bạn đã bị khóa bởi Quản trị viên!"));
             }
@@ -85,7 +85,7 @@ public class TaiKhoanController {
             return ResponseEntity.ok(response);
         }
 
-         log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
+                log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("message", "Sai tên đăng nhập hoặc mật khẩu!"));
     }
@@ -103,10 +103,9 @@ public class TaiKhoanController {
         taiKhoanMoi.setUsername(cleanUsername);
         taiKhoanMoi.setPassword(passwordEncoder.encode(request.getPassword()));
         
-               String reqRole = request.getRole(); 
+                        String reqRole = request.getRole(); 
         if (reqRole == null || reqRole.trim().isEmpty()) {
-            reqRole = "ROLE_USER";
-        }
+            reqRole = "ROLE_USER";         }
         taiKhoanMoi.setRole(reqRole);
 
         KhachHang hoSoRong = new KhachHang();
@@ -138,8 +137,7 @@ public class TaiKhoanController {
 
     @GetMapping("/chu-tro")
     public ResponseEntity<?> layDanhSachChuTro() {
-        // 🔥 TỐI ƯU 4: Fetch siêu tốc từ Database lên, bỏ qua toàn bộ quan hệ rườm rà
-        List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
+                List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
         return ResponseEntity.ok(danhSachChuTro);
     }
 
@@ -157,6 +155,9 @@ public class TaiKhoanController {
             map.put("hoTen", tk.getKhachHang().getHoTen());
             map.put("soDienThoai", tk.getKhachHang().getSoDienThoai());
             map.put("email", tk.getKhachHang().getEmail());
+            map.put("tenNganHang", tk.getKhachHang().getTenNganHang());
+            map.put("soTaiKhoan", tk.getKhachHang().getSoTaiKhoan());
+            map.put("chuTaiKhoan", tk.getKhachHang().getChuTaiKhoan());
             
             String cccd = tk.getKhachHang().getSoCccd();
             boolean isVerified = (cccd != null && !cccd.trim().isEmpty());
@@ -168,7 +169,7 @@ public class TaiKhoanController {
         return ResponseEntity.ok(map);
     }
 
-    @GetMapping("/admin/danh-sach-tai-khoan")
+        @GetMapping("/admin/danh-sach-tai-khoan")
     @PreAuthorize("hasRole('ADMIN')") 
     public ResponseEntity<?> layDanhSachNguoiDung(
             @RequestParam(defaultValue = "0") int page,

@@ -43,7 +43,6 @@ public class HopDongController {
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
-    // 🔥 FIX 5: Bắt client gửi DTO thay vì Entity
     public ResponseEntity<?> kyHopDongMoi(@Valid @RequestBody HopDongRequestDTO request, Principal principal) {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
                 .orElseThrow(() -> new NotFoundException("Xác thực thất bại, user không tồn tại!"));
@@ -59,7 +58,6 @@ public class HopDongController {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
                 .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
 
-        // 🔥 FIX 7: Kiểm tra Role chặt chẽ, phải là Admin hoặc đúng Chủ Trọ đó
         if (!"ROLE_ADMIN".equals(user.getRole())) {
             if (!"ROLE_LANDLORD".equals(user.getRole()) || !user.getId().equals(chuTroId)) {
                 throw new ForbiddenException("Không được phép xem dữ liệu của chủ trọ khác!");
@@ -108,5 +106,26 @@ public class HopDongController {
         } catch (IllegalArgumentException e) {
             throw new com.btl.server.exception.BadRequestException("Trạng thái chuyển đổi không hợp lệ!");
         }
+    }
+
+    @PutMapping("/{id}/gia-han")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
+    public ResponseEntity<?> capNhatGiaHan(@PathVariable Long id, @RequestParam String ngayKetThucMoi, Principal principal) {
+        TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
+        
+        java.time.LocalDate date = java.time.LocalDate.parse(ngayKetThucMoi);
+        hopDongService.giaHanHopDong(id, date, user);
+        return ResponseEntity.ok(Map.of("message", "Gia hạn hợp đồng thành công!"));
+    }
+
+    @PutMapping("/{id}/thanh-ly")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
+    public ResponseEntity<?> thanhLyHopDong(@PathVariable Long id, Principal principal) {
+        TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
+        
+        hopDongService.capNhatTrangThaiHopDong(id, TrangThaiHopDong.DA_THANH_LY, user);
+        return ResponseEntity.ok(Map.of("message", "Đã thanh lý hợp đồng thành công!"));
     }
 }

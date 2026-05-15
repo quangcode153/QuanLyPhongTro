@@ -21,6 +21,8 @@ import org.springframework.http.HttpMethod;
 
 import com.btl.server.repository.TaiKhoanRepository;
 
+import com.btl.server.security.oauth2.CustomOAuth2UserService;
+import com.btl.server.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import java.util.Arrays;
 
 @Configuration
@@ -33,6 +35,12 @@ public class SecurityConfig {
 
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
+
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+
+    @Autowired
+    private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Value("${cors.allowed.origins}")
     private String allowedOrigins;
@@ -68,7 +76,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/tai-khoan/**").permitAll()
+                .requestMatchers("/api/tai-khoan/**", "/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/hop-dong/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/phong-tro/**").permitAll()
@@ -78,6 +86,10 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/tin-nhan/**").permitAll()
                 .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2AuthenticationSuccessHandler)
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

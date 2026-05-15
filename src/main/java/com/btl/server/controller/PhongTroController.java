@@ -45,9 +45,6 @@ public class PhongTroController {
         this.hopDongRepository = hopDongRepository;
     }
 
-    /**
-     * Lấy danh sách phòng: 
-     */
     @GetMapping
     public ResponseEntity<List<PhongTro>> layDanhSachPhong(Principal principal) {
         if (principal == null) {
@@ -56,17 +53,13 @@ public class PhongTroController {
 
         TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(principal.getName().toLowerCase()).orElse(null);
         
-        // 🔥 FIX BẢO MẬT: Chặn đứng bypass quyền bằng .equals thay vì .contains
-        if (taiKhoan != null && "ROLE_LANDLORD".equals(taiKhoan.getRole())) {
+                if (taiKhoan != null && "ROLE_LANDLORD".equals(taiKhoan.getRole())) {
             return ResponseEntity.ok(phongTroService.getPhongByChuTroId(taiKhoan.getId()));
         }
         
         return ResponseEntity.ok(phongTroService.getAllPhongs());
     }
 
-    /**
-     * Thêm phòng mới: 
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
     public ResponseEntity<?> themPhongMoi(@Valid @RequestBody PhongTro phongTro, Principal principal) {
@@ -79,16 +72,12 @@ public class PhongTroController {
 
         phongTro.setChuTroId(chuTro.getId());
         
-        // 🔥 FIX DÂY CHUYỀN 1: Dùng Enum thay cho String
-        phongTro.setTrangThai(TrangThaiPhong.TRONG); 
+                phongTro.setTrangThai(TrangThaiPhong.TRONG); 
 
         log.info("User {} đã thêm phòng trọ mới", chuTro.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(phongTroService.savePhong(phongTro));
     }
 
-    /**
-     * Cập nhật thông tin phòng:
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
     public ResponseEntity<?> capNhatPhong(@PathVariable Long id, @Valid @RequestBody PhongTro phongTroMoi) {
@@ -105,9 +94,6 @@ public class PhongTroController {
         return ResponseEntity.ok(phongTroService.savePhong(phongTroMoi));
     }
 
-    /**
-     * Cập nhật trạng thái phòng:
-     */
     @PutMapping("/{id}/trang-thai")
     @Transactional
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
@@ -117,8 +103,7 @@ public class PhongTroController {
             throw new NotFoundException("Không tìm thấy phòng trọ!");
         }
 
-        // 🔥 FIX DÂY CHUYỀN 2: Parse String từ Request an toàn sang Enum
-        TrangThaiPhong trangThaiEnum;
+                TrangThaiPhong trangThaiEnum;
         try {
             trangThaiEnum = TrangThaiPhong.valueOf(trangThai.toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -127,8 +112,7 @@ public class PhongTroController {
         existingPhong.setTrangThai(trangThaiEnum);
         phongTroService.savePhong(existingPhong);
 
-        // 🔥 FIX DÂY CHUYỀN 3: Kiểm tra bằng Enum
-        if (trangThaiEnum == TrangThaiPhong.TRONG) {
+                if (trangThaiEnum == TrangThaiPhong.TRONG) {
             List<HopDong> hopDongs = hopDongRepository.findByPhongTro_Id(id);
             int count = 0;
             for (HopDong hd : hopDongs) {
@@ -146,9 +130,6 @@ public class PhongTroController {
         return ResponseEntity.ok(existingPhong);
     }
 
-    /**
-     * Xóa phòng:
-     */
     @DeleteMapping("/{id}")
     @Transactional
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
@@ -158,14 +139,11 @@ public class PhongTroController {
             throw new NotFoundException("Không tìm thấy phòng trọ!");
         }
 
-
         phongTroService.deletePhong(id);
         log.info("Đã xóa phòng ID: {}", id);
         
         return ResponseEntity.ok(Map.of("message", "Đã xóa thành công phòng và các hợp đồng liên quan!"));
     }
-
-    // --- Các API bổ trợ tìm kiếm và lọc ---
 
     @GetMapping("/tim-kiem")
     public ResponseEntity<List<PhongTro>> timPhong(@RequestParam String trangThai) {
@@ -177,8 +155,7 @@ public class PhongTroController {
         }
     }
 
-    // 🔥 FIX DÂY CHUYỀN 4: Sửa triệt để thành BigDecimal ở tham số
-    @GetMapping("/loc-phong")
+        @GetMapping("/loc-phong")
     public ResponseEntity<List<PhongTro>> locPhongTheoGia(
             @RequestParam String trangThai, @RequestParam BigDecimal giaToiDa) {
         try {
@@ -187,6 +164,23 @@ public class PhongTroController {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Trạng thái phòng không hợp lệ!");
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<PhongTro>> searchPhong(
+            @RequestParam(required = false) String tenPhong,
+            @RequestParam(required = false) BigDecimal giaToiThieu,
+            @RequestParam(required = false) BigDecimal giaToiDa,
+            @RequestParam(required = false) String trangThai) {
+        TrangThaiPhong trangThaiEnum = null;
+        if (trangThai != null && !trangThai.trim().isEmpty()) {
+            try {
+                trangThaiEnum = TrangThaiPhong.valueOf(trangThai.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Trạng thái phòng không hợp lệ!");
+            }
+        }
+        return ResponseEntity.ok(phongTroService.searchPhongTro(tenPhong, giaToiThieu, giaToiDa, trangThaiEnum));
     }
 
     @GetMapping("/chu-tro/{chuTroId}")
