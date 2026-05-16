@@ -95,13 +95,21 @@ public class HopDongController {
 
     @PutMapping("/{id}/trang-thai")
     @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
-    public ResponseEntity<?> capNhatTrangThai(@PathVariable Long id, @RequestParam String trangThai, Principal principal) {
+    public ResponseEntity<?> capNhatTrangThai(
+            @PathVariable Long id, 
+            @RequestParam String trangThai, 
+            @RequestParam(required = false) String ngayKetThuc,
+            Principal principal) {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
                 .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
 
         try {
             TrangThaiHopDong trangThaiMoi = TrangThaiHopDong.valueOf(trangThai.toUpperCase());
-            hopDongService.capNhatTrangThaiHopDong(id, trangThaiMoi, user);
+            java.time.LocalDate date = null;
+            if (ngayKetThuc != null && !ngayKetThuc.isEmpty()) {
+                date = java.time.LocalDate.parse(ngayKetThuc);
+            }
+            hopDongService.capNhatTrangThaiHopDong(id, trangThaiMoi, date, user);
             return ResponseEntity.ok(Map.of("message", "Cập nhật trạng thái thành công!"));
         } catch (IllegalArgumentException e) {
             throw new com.btl.server.exception.BadRequestException("Trạng thái chuyển đổi không hợp lệ!");
@@ -125,7 +133,7 @@ public class HopDongController {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
                 .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
         
-        hopDongService.capNhatTrangThaiHopDong(id, TrangThaiHopDong.DA_THANH_LY, user);
+        hopDongService.capNhatTrangThaiHopDong(id, TrangThaiHopDong.DA_THANH_LY, null, user);
         return ResponseEntity.ok(Map.of("message", "Đã thanh lý hợp đồng thành công!"));
     }
 }

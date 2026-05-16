@@ -85,7 +85,7 @@ public class HopDongService {
     }
 
     @Transactional
-    public HopDong capNhatTrangThaiHopDong(Long hopDongId, TrangThaiHopDong trangThaiMoi, TaiKhoan currentUser) {
+    public HopDong capNhatTrangThaiHopDong(Long hopDongId, TrangThaiHopDong trangThaiMoi, LocalDate ngayKetThuc, TaiKhoan currentUser) {
         HopDong hd = hopDongRepository.findById(hopDongId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hợp đồng!"));
 
@@ -102,6 +102,9 @@ public class HopDongService {
         }
 
         hd.setTrangThai(trangThaiMoi);
+        if (ngayKetThuc != null) {
+            hd.setNgayKetThuc(ngayKetThuc);
+        }
 
         if (hd.getPhongTro() != null) {
             PhongTro p = hd.getPhongTro();
