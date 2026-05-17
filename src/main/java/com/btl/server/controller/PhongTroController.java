@@ -169,6 +169,7 @@ public class PhongTroController {
     @GetMapping("/search")
     public ResponseEntity<List<PhongTro>> searchPhong(
             @RequestParam(required = false) String tenPhong,
+            @RequestParam(required = false) String diaChi,
             @RequestParam(required = false) BigDecimal giaToiThieu,
             @RequestParam(required = false) BigDecimal giaToiDa,
             @RequestParam(required = false) String trangThai) {
@@ -180,7 +181,7 @@ public class PhongTroController {
                 throw new BadRequestException("Trạng thái phòng không hợp lệ!");
             }
         }
-        return ResponseEntity.ok(phongTroService.searchPhongTro(tenPhong, giaToiThieu, giaToiDa, trangThaiEnum));
+        return ResponseEntity.ok(phongTroService.searchPhongTro(tenPhong, diaChi, giaToiThieu, giaToiDa, trangThaiEnum));
     }
 
     @GetMapping("/chu-tro/{chuTroId}")

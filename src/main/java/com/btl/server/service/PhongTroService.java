@@ -62,8 +62,8 @@ public class PhongTroService {
         return phongTroRepository.findByTrangThaiAndGiaPhongLessThanEqual(trangThai, giaToiDa);
     }
 
-    public List<PhongTro> searchPhongTro(String tenPhong, BigDecimal giaToiThieu, BigDecimal giaToiDa, TrangThaiPhong trangThai) {
-        return phongTroRepository.searchPhongTro(tenPhong, giaToiThieu, giaToiDa, trangThai);
+    public List<PhongTro> searchPhongTro(String tenPhong, String diaChi, BigDecimal giaToiThieu, BigDecimal giaToiDa, TrangThaiPhong trangThai) {
+        return phongTroRepository.searchPhongTro(tenPhong, diaChi, giaToiThieu, giaToiDa, trangThai);
     }
 
         @Transactional

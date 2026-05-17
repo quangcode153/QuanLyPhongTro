@@ -28,10 +28,12 @@ public interface PhongTroRepository extends JpaRepository<PhongTro, Long> {
 
     @Query("SELECT p FROM PhongTro p WHERE " +
            "(:tenPhong IS NULL OR LOWER(p.tenPhong) LIKE LOWER(CONCAT('%', :tenPhong, '%'))) AND " +
+           "(:diaChi IS NULL OR LOWER(p.diaChi) LIKE LOWER(CONCAT('%', :diaChi, '%'))) AND " +
            "(:giaToiThieu IS NULL OR p.giaPhong >= :giaToiThieu) AND " +
            "(:giaToiDa IS NULL OR p.giaPhong <= :giaToiDa) AND " +
            "(:trangThai IS NULL OR p.trangThai = :trangThai)")
     List<PhongTro> searchPhongTro(@Param("tenPhong") String tenPhong,
+                                  @Param("diaChi") String diaChi,
                                   @Param("giaToiThieu") BigDecimal giaToiThieu,
                                   @Param("giaToiDa") BigDecimal giaToiDa,
                                   @Param("trangThai") TrangThaiPhong trangThai);
