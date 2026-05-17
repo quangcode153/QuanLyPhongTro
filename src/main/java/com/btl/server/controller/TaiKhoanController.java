@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import com.btl.server.entity.TaiKhoan;
 import com.btl.server.entity.KhachHang;
 import com.btl.server.repository.TaiKhoanRepository;
+import com.btl.server.repository.PhongTroRepository;
+import com.btl.server.repository.HopDongRepository;
 import com.btl.server.security.JwtService;
 import com.btl.server.dto.AuthRequestDTO;
 import com.btl.server.exception.NotFoundException;
@@ -36,11 +38,16 @@ public class TaiKhoanController {
         private final TaiKhoanRepository taiKhoanRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final PhongTroRepository phongTroRepository;
+    private final HopDongRepository hopDongRepository;
 
-    public TaiKhoanController(TaiKhoanRepository taiKhoanRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public TaiKhoanController(TaiKhoanRepository taiKhoanRepository, PasswordEncoder passwordEncoder, JwtService jwtService, 
+                            PhongTroRepository phongTroRepository, HopDongRepository hopDongRepository) {
         this.taiKhoanRepository = taiKhoanRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.phongTroRepository = phongTroRepository;
+        this.hopDongRepository = hopDongRepository;
     }
 
     @PostMapping("/login")
@@ -221,5 +228,35 @@ public class TaiKhoanController {
         response.put("message", tk.isLocked() ? "Đã khóa tài khoản!" : "Đã mở khóa tài khoản!");
 
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id, HttpServletRequest request) {
+        TaiKhoan tk = taiKhoanRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy tài khoản"));
+        
+        if ("ROLE_ADMIN".equals(tk.getRole())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Không thể xóa tài khoản Admin!"));
+        }
+
+
+        if ("ROLE_LANDLORD".equals(tk.getRole())) {
+            if (!phongTroRepository.findByChuTroId(id).isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("message", "Không thể xóa: Chủ trọ này đang có khu trọ và phòng đang hoạt động!"));
+            }
+        } else if ("ROLE_USER".equals(tk.getRole())) {
+            if (!hopDongRepository.findByKhachHang_Id(id).isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("message", "Không thể xóa: Khách thuê này đang có hợp đồng trên hệ thống!"));
+            }
+        }
+
+        taiKhoanRepository.delete(tk);
+        log.info("Admin deleted user ID: {}. IP: {}", id, request.getRemoteAddr());
+
+        return ResponseEntity.ok(Map.of("message", "Đã xóa tài khoản thành công!"));
     }
 }

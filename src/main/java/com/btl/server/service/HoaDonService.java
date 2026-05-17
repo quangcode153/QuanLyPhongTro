@@ -37,7 +37,6 @@ public class HoaDonService {
         HoaDon hd = hoaDonRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hóa đơn này để xóa!"));
         
-        // 🔥 Xóa cả chỉ số điện nước để có thể chốt lại từ đầu
         chiSoRepo.findByPhongTroIdAndThangAndNam(hd.getPhongTro().getId(), hd.getThang(), hd.getNam())
             .ifPresent(chiSo -> chiSoRepo.delete(chiSo));
 

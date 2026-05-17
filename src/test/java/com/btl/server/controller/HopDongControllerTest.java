@@ -51,14 +51,15 @@ class HopDongControllerTest {
         mockUser = new TaiKhoan();
         mockUser.setId(1L);
         mockUser.setUsername("testuser");
-        mockUser.setRole("ROLE_USER");  }
+        mockUser.setRole("ROLE_USER");
+    }
 
     @Test
     void testXemDanhSachHopDong_ShouldReturn200AndEmptyList() {
         when(hopDongService.layTatCaHopDong()).thenReturn(Collections.emptyList());
-        
+
         ResponseEntity<List<HopDong>> response = hopDongController.xemDanhSachHopDong();
-        
+
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(hopDongService).layTatCaHopDong();
     }
@@ -81,7 +82,7 @@ class HopDongControllerTest {
     @Test
     void testLayHopDongCuaChuTro_ShouldThrowForbidden_WhenXemCuaNguoiKhac() {
         mockUser.setRole("ROLE_LANDLORD");
-        mockUser.setId(2L); 
+        mockUser.setId(2L);
         when(principal.getName()).thenReturn("testuser");
         when(taiKhoanRepository.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
 
@@ -96,7 +97,7 @@ class HopDongControllerTest {
         when(taiKhoanRepository.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
         when(hopDongService.layHopDongTheoKhach(1L)).thenReturn(Collections.emptyList());
 
-       ResponseEntity<List<HopDong>> response = hopDongController.layHopDongCuaKhach(1L, "ALL", principal);
+        ResponseEntity<List<HopDong>> response = hopDongController.layHopDongCuaKhach(1L, "ALL", principal);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(hopDongService).layHopDongTheoKhach(1L);
@@ -106,7 +107,7 @@ class HopDongControllerTest {
     void testLayHopDongCuaKhach_ShouldReturnFiltered_WhenCoTrangThaiHopLe() {
         when(principal.getName()).thenReturn("testuser");
         when(taiKhoanRepository.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
-        
+
         when(hopDongService.layHopDongTheoKhachVaTrangThai(1L, TrangThaiHopDong.DA_DUYET))
                 .thenReturn(Collections.emptyList());
 
@@ -122,10 +123,10 @@ class HopDongControllerTest {
         when(principal.getName()).thenReturn("testuser");
         when(taiKhoanRepository.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
 
-        ResponseEntity<?> response = hopDongController.capNhatTrangThai(100L, "DA_DUYET", principal);
+        ResponseEntity<?> response = hopDongController.capNhatTrangThai(100L, "DA_DUYET", null, principal);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(hopDongService).capNhatTrangThaiHopDong(eq(100L), eq(TrangThaiHopDong.DA_DUYET), eq(mockUser));
+        verify(hopDongService).capNhatTrangThaiHopDong(eq(100L), eq(TrangThaiHopDong.DA_DUYET), eq(null), eq(mockUser));
     }
 
     @Test
@@ -134,7 +135,7 @@ class HopDongControllerTest {
         when(taiKhoanRepository.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
 
         assertThrows(com.btl.server.exception.BadRequestException.class, () -> {
-            hopDongController.capNhatTrangThai(100L, "KHA_NGHI", principal);
+            hopDongController.capNhatTrangThai(100L, "KHA_NGHI", null, principal);
         });
     }
 }

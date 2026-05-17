@@ -79,7 +79,7 @@ class KhachHangControllerTest {
     @Test
     void testLayChiTietKhachHang_ShouldReturn200_WithLongId() {
         HoSoResponseDTO mockResponse = new HoSoResponseDTO(new KhachHang());
-        Long targetId = 1L; // Sử dụng Long cho đồng bộ
+        Long targetId = 1L;
         
         when(principal.getName()).thenReturn("admin");
         when(khachHangService.layHoSoTheoId(targetId, "admin")).thenReturn(mockResponse);

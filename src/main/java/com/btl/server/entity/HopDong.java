@@ -14,8 +14,7 @@ public class HopDong {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // 🔥 TỐI ƯU: Dùng Long thay vì Integer
-
+    private Long id; 
     @NotNull(message = "Chưa nhập ngày bắt đầu hợp đồng!")
     @Column(name = "ngay_bat_dau")
     private LocalDate ngayBatDau;
@@ -23,14 +22,12 @@ public class HopDong {
     @Column(name = "ngay_ket_thuc")
     private LocalDate ngayKetThuc;
 
-    // 🔥 TỐI ƯU: Tiền bạc bắt buộc dùng BigDecimal để chống sai số
-    @Min(value = 0, message = "Tiền cọc không được là số âm!")
+        @Min(value = 0, message = "Tiền cọc không được là số âm!")
     @Column(name = "tien_coc")
     private BigDecimal tienCoc; 
 
-    // 🔥 TỐI ƯU: Ép dùng Enum chống gõ sai chính tả
-    @Enumerated(EnumType.STRING)
-    @Column(name = "trang_thai", nullable = false)
+        @Enumerated(EnumType.STRING)
+    @Column(name = "trang_thai", nullable = false, columnDefinition = "VARCHAR(50)")
     private TrangThaiHopDong trangThai = TrangThaiHopDong.CHO_DUYET;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -43,10 +40,7 @@ public class HopDong {
     @JsonIgnoreProperties(value = {"hopDongs", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private PhongTro phongTro;
 
-    // ==========================
-    // GETTERS & SETTERS
-    // ==========================
-    public Long getId() { return id; }
+                public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public LocalDate getNgayBatDau() { return ngayBatDau; }

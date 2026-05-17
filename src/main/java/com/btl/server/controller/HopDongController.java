@@ -96,8 +96,8 @@ public class HopDongController {
     @PutMapping("/{id}/trang-thai")
     @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
     public ResponseEntity<?> capNhatTrangThai(
-            @PathVariable Long id, 
-            @RequestParam String trangThai, 
+            @PathVariable Long id,
+            @RequestParam String trangThai,
             @RequestParam(required = false) String ngayKetThuc,
             Principal principal) {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
@@ -118,10 +118,11 @@ public class HopDongController {
 
     @PutMapping("/{id}/gia-han")
     @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
-    public ResponseEntity<?> capNhatGiaHan(@PathVariable Long id, @RequestParam String ngayKetThucMoi, Principal principal) {
+    public ResponseEntity<?> capNhatGiaHan(@PathVariable Long id, @RequestParam String ngayKetThucMoi,
+            Principal principal) {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
                 .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
-        
+
         java.time.LocalDate date = java.time.LocalDate.parse(ngayKetThucMoi);
         hopDongService.giaHanHopDong(id, date, user);
         return ResponseEntity.ok(Map.of("message", "Gia hạn hợp đồng thành công!"));
@@ -132,8 +133,18 @@ public class HopDongController {
     public ResponseEntity<?> thanhLyHopDong(@PathVariable Long id, Principal principal) {
         TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
                 .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
-        
+
         hopDongService.capNhatTrangThaiHopDong(id, TrangThaiHopDong.DA_THANH_LY, null, user);
         return ResponseEntity.ok(Map.of("message", "Đã thanh lý hợp đồng thành công!"));
+    }
+
+    @PutMapping("/{id}/khach-huy")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> khachHuyHopDong(@PathVariable Long id, Principal principal) {
+        TaiKhoan user = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
+                .orElseThrow(() -> new NotFoundException("User không tồn tại!"));
+
+        hopDongService.huyHopDongBoiKhach(id, user);
+        return ResponseEntity.ok(Map.of("message", "Đã hủy hợp đồng thành công! Tiền cọc sẽ bị khấu trừ theo quy định."));
     }
 }

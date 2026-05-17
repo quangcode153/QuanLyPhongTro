@@ -19,7 +19,7 @@ public class ThongBao {
     private String noiDung;
     
     private LocalDateTime ngayDang;
-    private Long chuTroId; // Để biết thông báo này của khu trọ nào
+    private Long chuTroId;
     
     public Long getId() {
         return id;

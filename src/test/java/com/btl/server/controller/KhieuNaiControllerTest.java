@@ -99,7 +99,7 @@ public class KhieuNaiControllerTest {
        mockMvc.perform(post("/api/khieu-nai")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isUnauthorized()); // Trả về 401
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -115,7 +115,7 @@ public class KhieuNaiControllerTest {
                 .with(user("unknown_user").roles("USER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isNotFound()); // Trả về 404
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -128,7 +128,7 @@ public class KhieuNaiControllerTest {
                 .with(user("quang_test").roles("USER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isBadRequest()); // Trả về 400
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -158,8 +158,8 @@ public class KhieuNaiControllerTest {
         Long khieuNaiId = 1L;
 
         mockMvc.perform(put("/api/khieu-nai/" + khieuNaiId + "/xu-ly")
-                .with(user("quang_test").roles("USER")) // Mang Role USER đi đòi làm việc của ADMIN
+                .with(user("quang_test").roles("USER"))
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden()); // Trả về 403 Forbidden
+                .andExpect(status().isForbidden());
     }
 }

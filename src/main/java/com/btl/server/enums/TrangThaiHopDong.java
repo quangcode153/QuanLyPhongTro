@@ -6,5 +6,6 @@ public enum TrangThaiHopDong {
     TU_CHOI,
     HUY,
     DA_KET_THUC,
-    DA_THANH_LY
+    DA_THANH_LY,
+    YEU_CAU_HUY
 }

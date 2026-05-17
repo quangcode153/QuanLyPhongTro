@@ -46,7 +46,7 @@ public class HoaDon {
     @Column(name = "tien_nuoc")
     private BigDecimal tienNuoc;
 
-    @ManyToOne(fetch = FetchType.LAZY) // 🔥 Nên dùng LAZY để tối ưu performance
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "phong_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "hoaDons"})
     private PhongTro phongTro;

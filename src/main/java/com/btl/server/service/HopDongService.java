@@ -150,4 +150,25 @@ public class HopDongService {
         log.info("Chủ trọ {} gia hạn hợp đồng {} đến ngày {}", currentUser.getUsername(), id, ngayKetThucMoi);
         return hopDongRepository.save(hd);
     }
+
+    @Transactional
+    public void huyHopDongBoiKhach(Long hopDongId, TaiKhoan currentUser) {
+        HopDong hd = hopDongRepository.findById(hopDongId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hợp đồng!"));
+
+        if (!hd.getKhachHang().getId().equals(currentUser.getId())) {
+            throw new ForbiddenException("Bạn không có quyền hủy hợp đồng của người khác!");
+        }
+
+        if (hd.getTrangThai() != TrangThaiHopDong.DA_DUYET) {
+            throw new BadRequestException("Chỉ có thể gửi yêu cầu hủy hợp đồng đang có hiệu lực!");
+        }
+
+        
+        hd.setTrangThai(TrangThaiHopDong.YEU_CAU_HUY);
+        hopDongRepository.save(hd);
+        
+        log.info("Khách hàng {} đã gửi yêu cầu hủy hợp đồng ID {}. Đang chờ chủ trọ phê duyệt.", 
+                currentUser.getUsername(), hopDongId);
+    }
 }

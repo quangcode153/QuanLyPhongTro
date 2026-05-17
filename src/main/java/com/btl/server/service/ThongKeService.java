@@ -28,7 +28,6 @@ public class ThongKeService {
     public ThongKeDTO layThongKeChuTro(Long chuTroId) {
         ThongKeDTO dto = new ThongKeDTO();
 
-        // 1. Calculate Room Stats
         List<PhongTro> cacPhong = phongTroRepository.findByChuTroId(chuTroId);
         int tongSoPhong = cacPhong.size();
         int soPhongDaThue = 0;
@@ -46,14 +45,12 @@ public class ThongKeService {
         dto.setSoPhongDaThue(soPhongDaThue);
         dto.setSoPhongTrong(soPhongTrong);
 
-        // 2. Unpaid Invoices Stats
         Integer countChuaThanhToan = hoaDonRepository.countHoaDonChuaThanhToan(chuTroId);
         BigDecimal tienChuaThanhToan = hoaDonRepository.sumTienChuaThanhToan(chuTroId);
         
         dto.setSoHoaDonChuaThanhToan(countChuaThanhToan != null ? countChuaThanhToan : 0);
         dto.setTongTienChuaThanhToan(tienChuaThanhToan != null ? tienChuaThanhToan : BigDecimal.ZERO);
 
-        // 3. Revenue & Trends
         LocalDate now = LocalDate.now();
         int thangHienTai = now.getMonthValue();
         int namHienTai = now.getYear();
@@ -70,7 +67,6 @@ public class ThongKeService {
         dto.setTongDoanhThuThangNay(doanhThuThangNay);
         dto.setTongDoanhThuThangTruoc(doanhThuThangTruoc);
 
-        // Calculate Growth Rate
         if (doanhThuThangTruoc.compareTo(BigDecimal.ZERO) == 0) {
             if (doanhThuThangNay.compareTo(BigDecimal.ZERO) > 0) {
                 dto.setTyLeTangTruong(100.0);
@@ -83,7 +79,6 @@ public class ThongKeService {
             dto.setTyLeTangTruong(phanTram.doubleValue());
         }
 
-        // 4. Generate 6-month chart data
         List<ThongKeDTO.BieuDoDoanhThu> bieuDo = new ArrayList<>();
         for (int i = 5; i >= 0; i--) {
             LocalDate t = now.minusMonths(i);
