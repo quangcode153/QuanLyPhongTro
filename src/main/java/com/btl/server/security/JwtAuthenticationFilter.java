@@ -24,6 +24,11 @@ import java.util.Optional;
 
 import io.jsonwebtoken.ExpiredJwtException;
 
+/**
+ * Bộ lọc xác thực JWT (OncePerRequestFilter).
+ * Chặn mọi HTTP Request gửi tới Backend để trích xuất Token từ Header "Authorization: Bearer <token>",
+ * kiểm tra hạn dùng, chữ ký số, tình trạng khóa tài khoản và thiết lập Security Context cho hệ thống Spring Security.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -45,6 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String requestPath = request.getRequestURI();
 
+        // Bỏ qua không quét Token đối với các API Đăng nhập và Đăng ký công khai
         if (requestPath.contains("/tai-khoan/login") || requestPath.contains("/tai-khoan/register")) {
             filterChain.doFilter(request, response);
             return;
@@ -52,6 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
+        // Nếu header trống hoặc không có tiền tố Bearer thì bỏ qua bộ lọc chuyển tiếp request
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -62,14 +69,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             final String username = jwtService.extractUsername(token);
 
+            // Nếu trích xuất được username và request này chưa được xác thực trong Session
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(username);
                 
+                // Cơ chế bảo mật thời gian thực: Nếu tài khoản bị Admin khóa (locked), lập tức thu hồi quyền đăng nhập
                 if (userOpt.isPresent() && userOpt.get().isLocked()) {
                     logger.warn("⚠️ Chặn truy cập: Tài khoản '{}' đang bị khóa!", username);
                     
-                    SecurityContextHolder.clearContext();
+                    SecurityContextHolder.clearContext(); // Xóa sạch chứng nhận cũ
                     
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json;charset=UTF-8");
@@ -81,13 +90,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
+                // Nếu Token hợp lệ, tạo Authentication Token và đưa vào context bảo mật
                 if (jwtService.isTokenValid(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
                                     userDetails.getAuthorities()
-                            );
+                             );
 
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource().buildDetails(request)
@@ -99,7 +109,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (ExpiredJwtException e) {
             logger.warn("⚠️ Token hết hạn khi truy cập: {}", requestPath);
-            SecurityContextHolder.clearContext();
+            SecurityContextHolder.clearContext(); // Xóa sạch context nếu token hết hạn
 
         } catch (Exception e) {
             logger.error("⚠️ JWT lỗi định dạng hoặc chữ ký: ", e);

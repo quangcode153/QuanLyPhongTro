@@ -38,7 +38,7 @@ public class KhachHangService {
     }
 
     public List<KhachHang> getAllKhachHang() {
-                return khachHangRepository.findAll();
+        return khachHangRepository.findAll();
     }
 
     @Transactional
@@ -62,7 +62,7 @@ public class KhachHangService {
     }
 
     public HoSoResponseDTO layHoSoCaNhan(String username) {
-                TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
+        TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng!"));
 
         KhachHang hoSo = khachHangRepository.findByTaiKhoan(user)
@@ -128,7 +128,6 @@ public class KhachHangService {
         hoSo.setGioiTinh(dto.getGioiTinh());
         hoSo.setSoCccd(dto.getSoCccd());
         hoSo.setSoDienThoai(dto.getSoDienThoai());
-        hoSo.setEmail(dto.getEmail());
         hoSo.setDiaChiThuongTru(dto.getDiaChiThuongTru());
         hoSo.setTenNganHang(dto.getTenNganHang());
         hoSo.setSoTaiKhoan(dto.getSoTaiKhoan());

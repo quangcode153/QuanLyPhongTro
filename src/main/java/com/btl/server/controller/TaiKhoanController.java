@@ -15,6 +15,7 @@ import com.btl.server.entity.KhachHang;
 import com.btl.server.repository.TaiKhoanRepository;
 import com.btl.server.repository.PhongTroRepository;
 import com.btl.server.repository.HopDongRepository;
+import com.btl.server.repository.KhachHangRepository;
 import com.btl.server.security.JwtService;
 import com.btl.server.dto.AuthRequestDTO;
 import com.btl.server.exception.NotFoundException;
@@ -27,6 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import com.btl.server.service.MailService;
 
 @RestController
 @RequestMapping("/api/tai-khoan")
@@ -35,25 +39,41 @@ public class TaiKhoanController {
     private static final Logger log = LoggerFactory.getLogger(TaiKhoanController.class);
     private final String BCRYPT_DUMMY_HASH = "$2a$10$wTf2E/.n./l5.f.P./R7l.y0r.2X/n.O.m.r.y.Q.t.Q.O.m.X.Y.m.C";
 
-        private final TaiKhoanRepository taiKhoanRepository;
+    private final TaiKhoanRepository taiKhoanRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final PhongTroRepository phongTroRepository;
     private final HopDongRepository hopDongRepository;
+    private final KhachHangRepository khachHangRepository;
+    private final MailService mailService;
+
+    private static final ConcurrentHashMap<String, OtpData> otpStorage = new ConcurrentHashMap<>();
+
+    private static class OtpData {
+        String otp;
+        long expiryTime;
+        OtpData(String otp, long expiryTime) {
+            this.otp = otp;
+            this.expiryTime = expiryTime;
+        }
+    }
 
     public TaiKhoanController(TaiKhoanRepository taiKhoanRepository, PasswordEncoder passwordEncoder, JwtService jwtService, 
-                            PhongTroRepository phongTroRepository, HopDongRepository hopDongRepository) {
+                            PhongTroRepository phongTroRepository, HopDongRepository hopDongRepository,
+                            KhachHangRepository khachHangRepository, MailService mailService) {
         this.taiKhoanRepository = taiKhoanRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.phongTroRepository = phongTroRepository;
         this.hopDongRepository = hopDongRepository;
+        this.khachHangRepository = khachHangRepository;
+        this.mailService = mailService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
 
-                String cleanUsername = request.getUsername().trim().toLowerCase();
+        String cleanUsername = request.getUsername().trim().toLowerCase();
         String clientIp = httpRequest.getRemoteAddr();
 
         Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
@@ -70,7 +90,7 @@ public class TaiKhoanController {
             TaiKhoan user = userOpt.get();
 
             if (user.isLocked()) {
-                                log.warn("Login blocked (Account Locked). IP: {}", clientIp);
+                log.warn("Login blocked (Account Locked). IP: {}", clientIp);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("message", "Tài khoản của bạn đã bị khóa bởi Quản trị viên!"));
             }
@@ -92,7 +112,7 @@ public class TaiKhoanController {
             return ResponseEntity.ok(response);
         }
 
-                log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
+        log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("message", "Sai tên đăng nhập hoặc mật khẩu!"));
     }
@@ -106,17 +126,57 @@ public class TaiKhoanController {
                     .body(Map.of("message", "Tên đăng nhập đã tồn tại! Vui lòng chọn tên khác."));
         }
 
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email đăng ký không được để trống!"));
+        }
+
+        String cleanEmail = request.getEmail().trim().toLowerCase();
+        if (khachHangRepository.findByEmail(cleanEmail).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email này đã được sử dụng! Vui lòng chọn email khác."));
+        }
+
+        String hoTen = request.getHoTen();
+        if (hoTen == null || hoTen.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Họ tên không được để trống!"));
+        }
+        hoTen = hoTen.trim();
+        if (hoTen.length() < 2 || hoTen.length() > 50) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Họ tên phải từ 2 đến 50 ký tự!"));
+        }
+        if (!hoTen.matches("^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂÂÊÔƠưăâêôơ\\s]+$")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Họ tên không được chứa số hoặc ký tự đặc biệt!"));
+        }
+
+        String registerOtpKey = "register_otp_" + cleanEmail;
+        OtpData registerOtpData = otpStorage.get(registerOtpKey);
+        if (registerOtpData == null || registerOtpData.expiryTime < System.currentTimeMillis()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mã xác thực OTP đã hết hạn hoặc không hợp lệ. Vui lòng lấy mã mới!"));
+        }
+        if (!registerOtpData.otp.equals(request.getOtp())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mã xác thực OTP không chính xác!"));
+        }
+        otpStorage.remove(registerOtpKey);
+
         TaiKhoan taiKhoanMoi = new TaiKhoan();
         taiKhoanMoi.setUsername(cleanUsername);
         taiKhoanMoi.setPassword(passwordEncoder.encode(request.getPassword()));
         
-                        String reqRole = request.getRole(); 
+        String reqRole = request.getRole(); 
         if (reqRole == null || reqRole.trim().isEmpty()) {
-            reqRole = "ROLE_USER";         }
+            reqRole = "ROLE_USER";
+        }
         taiKhoanMoi.setRole(reqRole);
 
         KhachHang hoSoRong = new KhachHang();
-        hoSoRong.setHoTen(cleanUsername);
+        hoSoRong.setHoTen(hoTen);
+        hoSoRong.setEmail(cleanEmail);
         hoSoRong.setTaiKhoan(taiKhoanMoi);
         taiKhoanMoi.setKhachHang(hoSoRong);
 
@@ -144,7 +204,7 @@ public class TaiKhoanController {
 
     @GetMapping("/chu-tro")
     public ResponseEntity<?> layDanhSachChuTro() {
-                List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
+        List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
         return ResponseEntity.ok(danhSachChuTro);
     }
 
@@ -176,7 +236,7 @@ public class TaiKhoanController {
         return ResponseEntity.ok(map);
     }
 
-        @GetMapping("/admin/danh-sach-tai-khoan")
+    @GetMapping("/admin/danh-sach-tai-khoan")
     @PreAuthorize("hasRole('ADMIN')") 
     public ResponseEntity<?> layDanhSachNguoiDung(
             @RequestParam(defaultValue = "0") int page,
@@ -241,7 +301,7 @@ public class TaiKhoanController {
                     .body(Map.of("message", "Không thể xóa tài khoản Admin!"));
         }
 
-
+        // Kiểm tra dữ liệu liên quan để tránh lỗi FK
         if ("ROLE_LANDLORD".equals(tk.getRole())) {
             if (!phongTroRepository.findByChuTroId(id).isEmpty()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -258,5 +318,112 @@ public class TaiKhoanController {
         log.info("Admin deleted user ID: {}. IP: {}", id, request.getRemoteAddr());
 
         return ResponseEntity.ok(Map.of("message", "Đã xóa tài khoản thành công!"));
+    }
+
+    @PostMapping("/send-register-otp")
+    public ResponseEntity<?> sendRegisterOtp(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email không được để trống!"));
+        }
+        email = email.trim().toLowerCase();
+        if (!email.endsWith("@gmail.com")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email phải là địa chỉ Gmail hợp lệ (@gmail.com)"));
+        }
+        if (khachHangRepository.findByEmail(email).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email này đã được sử dụng! Vui lòng chọn email khác."));
+        }
+
+        String otp = String.format("%06d", new Random().nextInt(1000000));
+        otpStorage.put("register_otp_" + email, new OtpData(otp, System.currentTimeMillis() + 5 * 60 * 1000));
+
+        try {
+            mailService.sendOtpMessage(email, otp, true);
+        } catch (Exception e) {
+            log.error("Failed to send OTP to {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể gửi email xác thực. Vui lòng kiểm tra lại cấu hình SMTP!"));
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Mã xác thực OTP đã được gửi đến Gmail của bạn. Vui lòng kiểm tra hòm thư!"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email không được để trống!"));
+        }
+        email = email.trim().toLowerCase();
+        Optional<KhachHang> khachOpt = khachHangRepository.findByEmail(email);
+        if (khachOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email này không tồn tại trên hệ thống!"));
+        }
+
+        String otp = String.format("%06d", new Random().nextInt(1000000));
+        otpStorage.put("forgot_otp_" + email, new OtpData(otp, System.currentTimeMillis() + 5 * 60 * 1000));
+
+        try {
+            mailService.sendOtpMessage(email, otp, false);
+        } catch (Exception e) {
+            log.error("Failed to send forgot password OTP to {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể gửi email xác thực. Vui lòng kiểm tra lại cấu hình SMTP!"));
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Mã xác thực OTP khôi phục mật khẩu đã được gửi đến Gmail của bạn."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String otp = body.get("otp");
+        String newPassword = body.get("newPassword");
+
+        if (email == null || email.trim().isEmpty() ||
+            otp == null || otp.trim().isEmpty() ||
+            newPassword == null || newPassword.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Vui lòng nhập đầy đủ thông tin Email, mã OTP và mật khẩu mới!"));
+        }
+
+        email = email.trim().toLowerCase();
+        otp = otp.trim();
+        newPassword = newPassword.trim();
+
+        if (newPassword.length() < 3) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mật khẩu phải chứa ít nhất 3 ký tự!"));
+        }
+
+        String forgotOtpKey = "forgot_otp_" + email;
+        OtpData forgotOtpData = otpStorage.get(forgotOtpKey);
+        if (forgotOtpData == null || forgotOtpData.expiryTime < System.currentTimeMillis()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mã xác thực OTP đã hết hạn hoặc không hợp lệ. Vui lòng lấy mã mới!"));
+        }
+        if (!forgotOtpData.otp.equals(otp)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mã xác thực OTP không chính xác!"));
+        }
+
+        KhachHang kh = khachHangRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy thông tin khách hàng!"));
+        TaiKhoan tk = kh.getTaiKhoan();
+        if (tk == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Không tìm thấy tài khoản tương ứng với email này!"));
+        }
+
+        tk.setPassword(passwordEncoder.encode(newPassword));
+        taiKhoanRepository.save(tk);
+
+        otpStorage.remove(forgotOtpKey);
+        return ResponseEntity.ok(Map.of("message", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới."));
     }
 }

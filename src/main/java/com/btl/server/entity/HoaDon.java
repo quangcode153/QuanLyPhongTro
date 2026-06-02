@@ -51,30 +51,84 @@ public class HoaDon {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "hoaDons"})
     private PhongTro phongTro;
 
+    /**
+     * Lấy giá trị của id.
+     */
     public Long getId() { return id; }
+    /**
+     * Cập nhật giá trị cho id.
+     */
     public void setId(Long id) { this.id = id; }
 
+    /**
+     * Lấy giá trị của thang.
+     */
     public Integer getThang() { return thang; }
+    /**
+     * Cập nhật giá trị cho thang.
+     */
     public void setThang(Integer thang) { this.thang = thang; }
 
+    /**
+     * Lấy giá trị của nam.
+     */
     public Integer getNam() { return nam; }
+    /**
+     * Cập nhật giá trị cho nam.
+     */
     public void setNam(Integer nam) { this.nam = nam; }
 
+    /**
+     * Lấy giá trị của tongTien.
+     */
     public BigDecimal getTongTien() { return tongTien; }
+    /**
+     * Cập nhật giá trị cho tongTien.
+     */
     public void setTongTien(BigDecimal tongTien) { this.tongTien = tongTien; }
 
+    /**
+     * Lấy giá trị của tienPhong.
+     */
     public BigDecimal getTienPhong() { return tienPhong; }
+    /**
+     * Cập nhật giá trị cho tienPhong.
+     */
     public void setTienPhong(BigDecimal tienPhong) { this.tienPhong = tienPhong; }
 
+    /**
+     * Lấy giá trị của tienDien.
+     */
     public BigDecimal getTienDien() { return tienDien; }
+    /**
+     * Cập nhật giá trị cho tienDien.
+     */
     public void setTienDien(BigDecimal tienDien) { this.tienDien = tienDien; }
 
+    /**
+     * Lấy giá trị của tienNuoc.
+     */
     public BigDecimal getTienNuoc() { return tienNuoc; }
+    /**
+     * Cập nhật giá trị cho tienNuoc.
+     */
     public void setTienNuoc(BigDecimal tienNuoc) { this.tienNuoc = tienNuoc; }
 
+    /**
+     * Lấy giá trị của trangThai.
+     */
     public TrangThaiHoaDon getTrangThai() { return trangThai; }
+    /**
+     * Cập nhật giá trị cho trangThai.
+     */
     public void setTrangThai(TrangThaiHoaDon trangThai) { this.trangThai = trangThai; }
 
+    /**
+     * Lấy giá trị của phongTro.
+     */
     public PhongTro getPhongTro() { return phongTro; }
+    /**
+     * Cập nhật giá trị cho phongTro.
+     */
     public void setPhongTro(PhongTro phongTro) { this.phongTro = phongTro; }
 }

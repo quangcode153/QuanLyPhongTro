@@ -123,10 +123,10 @@ class PhongTroServiceTest {
 
     @Test
     void testSearchPhongTro() {
-        when(phongTroRepository.searchPhongTro("101", BigDecimal.ZERO, new BigDecimal("4000000.0"), TrangThaiPhong.TRONG))
+        when(phongTroRepository.searchPhongTro("101", null, BigDecimal.ZERO, new BigDecimal("4000000.0"), TrangThaiPhong.TRONG))
                 .thenReturn(Arrays.asList(mockPhong));
 
-        List<PhongTro> list = phongTroService.searchPhongTro("101", BigDecimal.ZERO, new BigDecimal("4000000.0"), TrangThaiPhong.TRONG);
+        List<PhongTro> list = phongTroService.searchPhongTro("101", null, BigDecimal.ZERO, new BigDecimal("4000000.0"), TrangThaiPhong.TRONG);
 
         assertEquals(1, list.size());
     }

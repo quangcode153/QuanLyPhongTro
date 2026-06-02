@@ -40,24 +40,66 @@ public class HopDong {
     @JsonIgnoreProperties(value = {"hopDongs", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private PhongTro phongTro;
 
+                /**
+                 * Lấy giá trị của id.
+                 */
                 public Long getId() { return id; }
+    /**
+     * Cập nhật giá trị cho id.
+     */
     public void setId(Long id) { this.id = id; }
 
+    /**
+     * Lấy giá trị của ngayBatDau.
+     */
     public LocalDate getNgayBatDau() { return ngayBatDau; }
+    /**
+     * Cập nhật giá trị cho ngayBatDau.
+     */
     public void setNgayBatDau(LocalDate ngayBatDau) { this.ngayBatDau = ngayBatDau; }
 
+    /**
+     * Lấy giá trị của ngayKetThuc.
+     */
     public LocalDate getNgayKetThuc() { return ngayKetThuc; }
+    /**
+     * Cập nhật giá trị cho ngayKetThuc.
+     */
     public void setNgayKetThuc(LocalDate ngayKetThuc) { this.ngayKetThuc = ngayKetThuc; }
 
+    /**
+     * Lấy giá trị của tienCoc.
+     */
     public BigDecimal getTienCoc() { return tienCoc; }
+    /**
+     * Cập nhật giá trị cho tienCoc.
+     */
     public void setTienCoc(BigDecimal tienCoc) { this.tienCoc = tienCoc; }
 
+    /**
+     * Lấy giá trị của trangThai.
+     */
     public TrangThaiHopDong getTrangThai() { return trangThai; }
+    /**
+     * Cập nhật giá trị cho trangThai.
+     */
     public void setTrangThai(TrangThaiHopDong trangThai) { this.trangThai = trangThai; }
 
+    /**
+     * Lấy giá trị của khachHang.
+     */
     public TaiKhoan getKhachHang() { return khachHang; }
+    /**
+     * Cập nhật giá trị cho khachHang.
+     */
     public void setKhachHang(TaiKhoan khachHang) { this.khachHang = khachHang; }
 
+    /**
+     * Lấy giá trị của phongTro.
+     */
     public PhongTro getPhongTro() { return phongTro; }
+    /**
+     * Cập nhật giá trị cho phongTro.
+     */
     public void setPhongTro(PhongTro phongTro) { this.phongTro = phongTro; }
 }

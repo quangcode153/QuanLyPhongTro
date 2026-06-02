@@ -16,6 +16,9 @@ public class HoSoResponseDTO {
     private String soTaiKhoan;
     private String chuTaiKhoan;
 
+    /**
+     * Khởi tạo HoSoResponseDTO từ thực thể KhachHang.
+     */
     public HoSoResponseDTO(KhachHang entity) {
         this.id = entity.getId();
         this.hoTen = entity.getHoTen();
@@ -30,15 +33,48 @@ public class HoSoResponseDTO {
         this.chuTaiKhoan = entity.getChuTaiKhoan();
     }
 
+    /**
+     * Lấy giá trị của id.
+     */
     public Long getId() { return id; }
+    /**
+     * Lấy giá trị của hoTen.
+     */
     public String getHoTen() { return hoTen; }
+    /**
+     * Lấy giá trị của ngaySinh.
+     */
     public LocalDate getNgaySinh() { return ngaySinh; }
+    /**
+     * Lấy giá trị của gioiTinh.
+     */
     public String getGioiTinh() { return gioiTinh; }
+    /**
+     * Lấy giá trị của soCccd.
+     */
     public String getSoCccd() { return soCccd; }
+    /**
+     * Lấy giá trị của soDienThoai.
+     */
     public String getSoDienThoai() { return soDienThoai; }
+    /**
+     * Lấy giá trị của email.
+     */
     public String getEmail() { return email; }
+    /**
+     * Lấy giá trị của diaChiThuongTru.
+     */
     public String getDiaChiThuongTru() { return diaChiThuongTru; }
+    /**
+     * Lấy giá trị của tenNganHang.
+     */
     public String getTenNganHang() { return tenNganHang; }
+    /**
+     * Lấy giá trị của soTaiKhoan.
+     */
     public String getSoTaiKhoan() { return soTaiKhoan; }
+    /**
+     * Lấy giá trị của chuTaiKhoan.
+     */
     public String getChuTaiKhoan() { return chuTaiKhoan; }
 }

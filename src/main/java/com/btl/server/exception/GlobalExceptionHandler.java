@@ -15,6 +15,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Xử lý lỗi khi dữ liệu nhập vào không hợp lệ (Validation constraints).
+     */
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Map<String, String> xuLyLoiNhapLieu(MethodArgumentNotValidException ex) {
@@ -27,6 +30,9 @@ public class GlobalExceptionHandler {
         return danhSachLoi;
     }
 
+    /**
+     * Xử lý lỗi trùng lặp dữ liệu trong cơ sở dữ liệu (ví dụ trùng CCCD, SĐT, Email).
+     */
     @ResponseStatus(HttpStatus.CONFLICT)
     @ExceptionHandler(DataIntegrityViolationException.class)
     public Map<String, String> xuLyLoiTrungLapDuLieu(DataIntegrityViolationException ex) {
@@ -35,16 +41,25 @@ public class GlobalExceptionHandler {
         return loi;
     }
 
+    /**
+     * Xử lý ngoại lệ khi không tìm thấy tài nguyên (NotFoundException).
+     */
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
     }
 
+    /**
+     * Xử lý ngoại lệ khi truy cập bị cấm/từ chối (ForbiddenException).
+     */
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<Map<String, String>> handleForbidden(ForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", ex.getMessage()));
     }
 
+    /**
+     * Xử lý ngoại lệ khi yêu cầu gửi lên không hợp lệ (BadRequestException).
+     */
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(BadRequestException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));

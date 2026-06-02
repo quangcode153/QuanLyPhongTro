@@ -28,6 +28,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Value("${oauth2.redirect.uri:http://localhost:3000/oauth2/redirect}")
     private String redirectUri;
 
+    /**
+     * Xử lý sau khi người dùng đăng nhập OAuth2 thành công: Sinh mã token JWT và điều hướng chuyển tiếp về Client.
+     */
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         if (response.isCommitted()) {

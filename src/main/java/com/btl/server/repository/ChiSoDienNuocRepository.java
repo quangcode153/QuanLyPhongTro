@@ -7,11 +7,26 @@ import com.btl.server.entity.ChiSoDienNuoc;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository xử lý các truy vấn CSDL liên quan đến bảng `chi_so_dien_nuoc`.
+ * Lưu trữ lịch sử ghi chỉ số hàng tháng phục vụ việc truy xuất dữ liệu đối chiếu.
+ */
 @Repository
 public interface ChiSoDienNuocRepository extends JpaRepository<ChiSoDienNuoc, Long> {
+    
+    /**
+     * Tìm bản ghi chốt số điện nước của phòng trọ trong chu kỳ tháng/nam cụ thể.
+     */
     Optional<ChiSoDienNuoc> findByPhongTroIdAndThangAndNam(Long phongId, Integer thang, Integer nam);
+    
+    /**
+     * Lấy toàn bộ lịch sử chốt số điện nước của phòng trọ sắp xếp giảm dần theo thời gian (mới nhất lên đầu).
+     */
     List<ChiSoDienNuoc> findByPhongTroIdOrderByNamDescThangDesc(Long phongId);
 
+    /**
+     * Xóa sạch toàn bộ chỉ số điện nước liên kết với phòng trọ khi thực hiện xóa phòng trọ đó.
+     */
     @Modifying
     void deleteByPhongTro_Id(Long phongId);
 }

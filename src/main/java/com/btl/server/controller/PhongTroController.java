@@ -27,6 +27,10 @@ import com.btl.server.service.PhongTroService;
 import com.btl.server.repository.TaiKhoanRepository;
 import com.btl.server.repository.HopDongRepository;
 
+/**
+ * REST Controller tiếp nhận toàn bộ API endpoints xử lý liên quan đến Phòng Trọ (`/api/phong-tro`).
+ * Hỗ trợ các vai trò: Khách vãng lai, Khách thuê, Chủ trọ và Admin quản trị.
+ */
 @RestController
 @RequestMapping("/api/phong-tro")
 public class PhongTroController {
@@ -45,6 +49,15 @@ public class PhongTroController {
         this.hopDongRepository = hopDongRepository;
     }
 
+    /**
+     * API lấy danh sách các phòng trọ.
+     * Phân quyền nghiệp vụ:
+     * - Nếu là Khách vãng lai (chưa đăng nhập): Lấy toàn bộ danh sách phòng để xem.
+     * - Nếu là Chủ trọ (đã đăng nhập vai trò LANDLORD): Chỉ lọc lấy danh sách phòng thuộc quyền quản lý của riêng họ.
+     * - Nếu là Admin hoặc Khách thuê: Trả về toàn bộ danh sách phòng trọ trong hệ thống.
+     * 
+     * @return Danh sách PhongTro dạng JSON
+     */
     @GetMapping
     public ResponseEntity<List<PhongTro>> layDanhSachPhong(Principal principal) {
         if (principal == null) {
@@ -53,13 +66,18 @@ public class PhongTroController {
 
         TaiKhoan taiKhoan = taiKhoanRepository.findByUsername(principal.getName().toLowerCase()).orElse(null);
         
-                if (taiKhoan != null && "ROLE_LANDLORD".equals(taiKhoan.getRole())) {
+        // Nếu đăng nhập là Chủ trọ, trả về danh sách phòng riêng của họ
+        if (taiKhoan != null && "ROLE_LANDLORD".equals(taiKhoan.getRole())) {
             return ResponseEntity.ok(phongTroService.getPhongByChuTroId(taiKhoan.getId()));
         }
         
         return ResponseEntity.ok(phongTroService.getAllPhongs());
     }
 
+    /**
+     * API Thêm mới một phòng trọ (Chỉ dành cho ADMIN hoặc LANDLORD).
+     * @param phongTro Thực thể PhongTro nhận từ RequestBody
+     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('LANDLORD')")
     public ResponseEntity<?> themPhongMoi(@Valid @RequestBody PhongTro phongTro, Principal principal) {
@@ -70,14 +88,21 @@ public class PhongTroController {
         TaiKhoan chuTro = taiKhoanRepository.findByUsername(principal.getName().toLowerCase())
                 .orElseThrow(() -> new ForbiddenException("Thông tin chủ trọ không hợp lệ!"));
 
+        // Gán cứng ID chủ trọ cho phòng để tránh giả mạo
         phongTro.setChuTroId(chuTro.getId());
         
-                phongTro.setTrangThai(TrangThaiPhong.TRONG); 
+        // Phòng mới tạo mặc định ở trạng thái TRỐNG (TRONG)
+        phongTro.setTrangThai(TrangThaiPhong.TRONG); 
 
         log.info("User {} đã thêm phòng trọ mới", chuTro.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(phongTroService.savePhong(phongTro));
     }
 
+    /**
+     * API Cập nhật thông tin phòng trọ.
+     * Bảo mật: Sử dụng custom expression SpEL `@phongTroSecurity.isOwner(#id, authentication.name)`
+     * để kiểm tra xem chủ trọ đăng nhập có thực sự là chủ sở hữu của căn phòng trọ này hay không trước khi sửa.
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
     public ResponseEntity<?> capNhatPhong(@PathVariable Long id, @Valid @RequestBody PhongTro phongTroMoi) {
@@ -94,6 +119,12 @@ public class PhongTroController {
         return ResponseEntity.ok(phongTroService.savePhong(phongTroMoi));
     }
 
+    /**
+     * API Cập nhật riêng trạng thái hoạt động của phòng trọ (TRỐNG, ĐÃ THUÊ, ĐANG SỬA).
+     * Bảo mật: Chỉ Admin hoặc Chủ sở hữu phòng mới được phép gọi API này.
+     * Nghiệp vụ tự động: Nếu phòng chuyển sang TRỐNG, tự động quyết toán chuyển tất cả các hợp đồng
+     * đang thuê của phòng này sang trạng thái ĐÃ KẾT THÚC.
+     */
     @PutMapping("/{id}/trang-thai")
     @Transactional
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
@@ -103,7 +134,7 @@ public class PhongTroController {
             throw new NotFoundException("Không tìm thấy phòng trọ!");
         }
 
-                TrangThaiPhong trangThaiEnum;
+        TrangThaiPhong trangThaiEnum;
         try {
             trangThaiEnum = TrangThaiPhong.valueOf(trangThai.toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -112,7 +143,8 @@ public class PhongTroController {
         existingPhong.setTrangThai(trangThaiEnum);
         phongTroService.savePhong(existingPhong);
 
-                if (trangThaiEnum == TrangThaiPhong.TRONG) {
+        // Nghiệp vụ đồng bộ trạng thái:
+        if (trangThaiEnum == TrangThaiPhong.TRONG) {
             List<HopDong> hopDongs = hopDongRepository.findByPhongTro_Id(id);
             int count = 0;
             for (HopDong hd : hopDongs) {
@@ -130,6 +162,11 @@ public class PhongTroController {
         return ResponseEntity.ok(existingPhong);
     }
 
+    /**
+     * API Xóa phòng trọ ra khỏi CSDL.
+     * Bảo mật: Chỉ Admin hoặc Chủ sở hữu phòng mới được phép gọi.
+     * Kế thừa logic kiểm tra an toàn trong `PhongTroService.deletePhong(id)`.
+     */
     @DeleteMapping("/{id}")
     @Transactional
     @PreAuthorize("hasRole('ADMIN') or @phongTroSecurity.isOwner(#id, authentication.name)")
@@ -145,6 +182,9 @@ public class PhongTroController {
         return ResponseEntity.ok(Map.of("message", "Đã xóa thành công phòng và các hợp đồng liên quan!"));
     }
 
+    /**
+     * API Tìm kiếm phòng trọ theo trạng thái cụ thể.
+     */
     @GetMapping("/tim-kiem")
     public ResponseEntity<List<PhongTro>> timPhong(@RequestParam String trangThai) {
         try {
@@ -155,7 +195,10 @@ public class PhongTroController {
         }
     }
 
-        @GetMapping("/loc-phong")
+    /**
+     * API Lọc danh sách phòng theo trạng thái và giới hạn giá thuê tối đa.
+     */
+    @GetMapping("/loc-phong")
     public ResponseEntity<List<PhongTro>> locPhongTheoGia(
             @RequestParam String trangThai, @RequestParam BigDecimal giaToiDa) {
         try {
@@ -166,6 +209,10 @@ public class PhongTroController {
         }
     }
 
+    /**
+     * API Tìm kiếm phòng trọ đa tiêu chí kết hợp (Tên phòng, Địa chỉ, Khoảng giá, Trạng thái).
+     * Thường dùng cho bộ lọc tìm kiếm nâng cao ở trang chủ phía Frontend.
+     */
     @GetMapping("/search")
     public ResponseEntity<List<PhongTro>> searchPhong(
             @RequestParam(required = false) String tenPhong,
@@ -184,6 +231,9 @@ public class PhongTroController {
         return ResponseEntity.ok(phongTroService.searchPhongTro(tenPhong, diaChi, giaToiThieu, giaToiDa, trangThaiEnum));
     }
 
+    /**
+     * API Lấy toàn bộ danh sách phòng thuộc quản lý của một chủ trọ dựa theo ID.
+     */
     @GetMapping("/chu-tro/{chuTroId}")
     public ResponseEntity<List<PhongTro>> layPhongTheoChuTro(@PathVariable Long chuTroId) {
         return ResponseEntity.ok(phongTroService.getPhongByChuTroId(chuTroId));

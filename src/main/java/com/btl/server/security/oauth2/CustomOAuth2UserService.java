@@ -25,6 +25,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Autowired
     private KhachHangRepository khachHangRepository;
 
+    /**
+     * Tải và xử lý thông tin người dùng từ OAuth2 provider (Google, v.v.).
+     */
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest oAuth2UserRequest) throws OAuth2AuthenticationException {
@@ -34,6 +37,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return processOAuth2User(registrationId, oAuth2User);
     }
 
+    /**
+     * Xử lý xác thực hoặc đăng ký tài khoản tự động từ thông tin nhận về của OAuth2.
+     */
     private OAuth2User processOAuth2User(String registrationId, OAuth2User oAuth2User) {
         Map<String, Object> attributes = oAuth2User.getAttributes();
         String email = (String) attributes.get("email");
@@ -62,6 +68,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return oAuth2User;
     }
 
+    /**
+     * Đăng ký tài khoản khách thuê mới và tạo hồ sơ tương ứng khi đăng nhập OAuth2 lần đầu.
+     */
     private TaiKhoan registerNewUser(String email, String name, AuthProvider provider) {
         TaiKhoan taiKhoan = new TaiKhoan();
         taiKhoan.setUsername(email);
@@ -78,6 +87,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return taiKhoan;
     }
 
+    /**
+     * Cập nhật thông tin họ tên của tài khoản đã tồn tại từ OAuth2.
+     */
     private void updateExistingUser(TaiKhoan taiKhoan, String name) {
         KhachHang khachHang = taiKhoan.getKhachHang();
         if (khachHang != null) {

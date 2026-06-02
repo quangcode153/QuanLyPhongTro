@@ -45,17 +45,26 @@ public class SecurityConfig {
     @Value("${cors.allowed.origins}")
     private String allowedOrigins;
 
+    /**
+     * Cấu hình dịch vụ tìm kiếm thông tin tài khoản người dùng cho Spring Security.
+     */
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> taiKhoanRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + username));
     }
 
+    /**
+     * Cấu hình bộ mã hóa mật khẩu sử dụng thuật toán BCrypt.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Cấu hình chia sẻ tài nguyên nguồn gốc chéo (CORS) cho phép các nguồn tin cậy truy cập API.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -69,6 +78,9 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * Cấu hình bộ lọc bảo mật chính (Security Filter Chain), quy định phân quyền các API.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
