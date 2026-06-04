@@ -2,6 +2,7 @@ package com.btl.server.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ public class KhachHangService {
     }
 
     public List<KhachHang> getAllKhachHang() {
-        return khachHangRepository.findAll();
+                return khachHangRepository.findAll();
     }
 
     @Transactional
@@ -62,7 +63,7 @@ public class KhachHangService {
     }
 
     public HoSoResponseDTO layHoSoCaNhan(String username) {
-        TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
+                TaiKhoan user = taiKhoanRepository.findByUsername(username.toLowerCase())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng!"));
 
         KhachHang hoSo = khachHangRepository.findByTaiKhoan(user)
@@ -124,6 +125,19 @@ public class KhachHangService {
                 });
 
         hoSo.setHoTen(dto.getHoTen());
+
+        if (dto.getNgaySinh() != null) {
+            LocalDate ngaySinh = dto.getNgaySinh();
+            if (ngaySinh.isAfter(LocalDate.now())) {
+                throw new BadRequestException("Ngày sinh không thể thuộc về tương lai!");
+            }
+            if (ngaySinh.getYear() <= 1900) {
+                throw new BadRequestException("Năm sinh phải lớn hơn 1900!");
+            }
+            if (ngaySinh.isAfter(LocalDate.now().minusYears(18))) {
+                throw new BadRequestException("Bạn phải từ 18 tuổi trở lên để đăng ký hoặc cập nhật hồ sơ!");
+            }
+        }
         hoSo.setNgaySinh(dto.getNgaySinh());
         hoSo.setGioiTinh(dto.getGioiTinh());
         hoSo.setSoCccd(dto.getSoCccd());

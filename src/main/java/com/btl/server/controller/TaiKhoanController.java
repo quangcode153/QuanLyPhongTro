@@ -73,7 +73,7 @@ public class TaiKhoanController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
 
-        String cleanUsername = request.getUsername().trim().toLowerCase();
+                String cleanUsername = request.getUsername().trim().toLowerCase();
         String clientIp = httpRequest.getRemoteAddr();
 
         Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
@@ -90,7 +90,7 @@ public class TaiKhoanController {
             TaiKhoan user = userOpt.get();
 
             if (user.isLocked()) {
-                log.warn("Login blocked (Account Locked). IP: {}", clientIp);
+                                log.warn("Login blocked (Account Locked). IP: {}", clientIp);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("message", "Tài khoản của bạn đã bị khóa bởi Quản trị viên!"));
             }
@@ -112,7 +112,7 @@ public class TaiKhoanController {
             return ResponseEntity.ok(response);
         }
 
-        log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
+                log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("message", "Sai tên đăng nhập hoặc mật khẩu!"));
     }
@@ -204,7 +204,7 @@ public class TaiKhoanController {
 
     @GetMapping("/chu-tro")
     public ResponseEntity<?> layDanhSachChuTro() {
-        List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
+                List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
         return ResponseEntity.ok(danhSachChuTro);
     }
 
@@ -236,7 +236,7 @@ public class TaiKhoanController {
         return ResponseEntity.ok(map);
     }
 
-    @GetMapping("/admin/danh-sach-tai-khoan")
+        @GetMapping("/admin/danh-sach-tai-khoan")
     @PreAuthorize("hasRole('ADMIN')") 
     public ResponseEntity<?> layDanhSachNguoiDung(
             @RequestParam(defaultValue = "0") int page,
@@ -353,25 +353,43 @@ public class TaiKhoanController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
         String email = body.get("email");
+
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Tên tài khoản không được để trống!", "errorType", "username"));
+        }
         if (email == null || email.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Email không được để trống!"));
+                    .body(Map.of("message", "Email không được để trống!", "errorType", "email"));
         }
-        email = email.trim().toLowerCase();
-        Optional<KhachHang> khachOpt = khachHangRepository.findByEmail(email);
-        if (khachOpt.isEmpty()) {
+
+        String cleanUsername = username.trim().toLowerCase();
+        String cleanEmail = email.trim().toLowerCase();
+
+        // 1. Kiểm tra tên tài khoản (username) có tồn tại
+        Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Email này không tồn tại trên hệ thống!"));
+                    .body(Map.of("message", "Tên đăng nhập không tồn tại!", "errorType", "username"));
+        }
+
+        // 2. Kiểm tra email liên kết với tài khoản này
+        TaiKhoan user = userOpt.get();
+        KhachHang khachHang = user.getKhachHang();
+        if (khachHang == null || khachHang.getEmail() == null || !khachHang.getEmail().trim().toLowerCase().equals(cleanEmail)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email không chính xác đối với tài khoản này!", "errorType", "email"));
         }
 
         String otp = String.format("%06d", new Random().nextInt(1000000));
-        otpStorage.put("forgot_otp_" + email, new OtpData(otp, System.currentTimeMillis() + 5 * 60 * 1000));
+        otpStorage.put("forgot_otp_" + cleanEmail, new OtpData(otp, System.currentTimeMillis() + 5 * 60 * 1000));
 
         try {
-            mailService.sendOtpMessage(email, otp, false);
+            mailService.sendOtpMessage(cleanEmail, otp, false);
         } catch (Exception e) {
-            log.error("Failed to send forgot password OTP to {}", email, e);
+            log.error("Failed to send forgot password OTP to {}", cleanEmail, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Không thể gửi email xác thực. Vui lòng kiểm tra lại cấu hình SMTP!"));
         }
@@ -379,29 +397,40 @@ public class TaiKhoanController {
         return ResponseEntity.ok(Map.of("message", "Mã xác thực OTP khôi phục mật khẩu đã được gửi đến Gmail của bạn."));
     }
 
-    @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+    @PostMapping("/verify-forgot-otp")
+    public ResponseEntity<?> verifyForgotOtp(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
         String email = body.get("email");
         String otp = body.get("otp");
-        String newPassword = body.get("newPassword");
 
-        if (email == null || email.trim().isEmpty() ||
-            otp == null || otp.trim().isEmpty() ||
-            newPassword == null || newPassword.trim().isEmpty()) {
+        if (username == null || username.trim().isEmpty() ||
+            email == null || email.trim().isEmpty() ||
+            otp == null || otp.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Vui lòng nhập đầy đủ thông tin Email, mã OTP và mật khẩu mới!"));
+                    .body(Map.of("message", "Vui lòng nhập đầy đủ tên tài khoản, email và mã OTP!"));
         }
 
-        email = email.trim().toLowerCase();
+        String cleanUsername = username.trim().toLowerCase();
+        String cleanEmail = email.trim().toLowerCase();
         otp = otp.trim();
-        newPassword = newPassword.trim();
 
-        if (newPassword.length() < 3) {
+        // 1. Kiểm tra tài khoản
+        Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Mật khẩu phải chứa ít nhất 3 ký tự!"));
+                    .body(Map.of("message", "Tên đăng nhập không tồn tại!"));
         }
 
-        String forgotOtpKey = "forgot_otp_" + email;
+        // 2. Kiểm tra email liên kết
+        TaiKhoan user = userOpt.get();
+        KhachHang khachHang = user.getKhachHang();
+        if (khachHang == null || khachHang.getEmail() == null || !khachHang.getEmail().trim().toLowerCase().equals(cleanEmail)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email không khớp với tài khoản!"));
+        }
+
+        // 3. Kiểm tra OTP
+        String forgotOtpKey = "forgot_otp_" + cleanEmail;
         OtpData forgotOtpData = otpStorage.get(forgotOtpKey);
         if (forgotOtpData == null || forgotOtpData.expiryTime < System.currentTimeMillis()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -412,12 +441,59 @@ public class TaiKhoanController {
                     .body(Map.of("message", "Mã xác thực OTP không chính xác!"));
         }
 
-        KhachHang kh = khachHangRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy thông tin khách hàng!"));
-        TaiKhoan tk = kh.getTaiKhoan();
-        if (tk == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", "Không tìm thấy tài khoản tương ứng với email này!"));
+        return ResponseEntity.ok(Map.of("message", "Xác thực OTP thành công!"));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
+        String email = body.get("email");
+        String otp = body.get("otp");
+        String newPassword = body.get("newPassword");
+
+        if (username == null || username.trim().isEmpty() ||
+            email == null || email.trim().isEmpty() ||
+            otp == null || otp.trim().isEmpty() ||
+            newPassword == null || newPassword.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Vui lòng nhập đầy đủ thông tin tên tài khoản, email, mã OTP và mật khẩu mới!"));
+        }
+
+        String cleanUsername = username.trim().toLowerCase();
+        String cleanEmail = email.trim().toLowerCase();
+        otp = otp.trim();
+        newPassword = newPassword.trim();
+
+        if (newPassword.length() < 3) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mật khẩu phải chứa ít nhất 3 ký tự!"));
+        }
+
+        // 1. Kiểm tra tài khoản
+        Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Tên đăng nhập không tồn tại!"));
+        }
+
+        // 2. Kiểm tra email liên kết
+        TaiKhoan tk = userOpt.get();
+        KhachHang kh = tk.getKhachHang();
+        if (kh == null || kh.getEmail() == null || !kh.getEmail().trim().toLowerCase().equals(cleanEmail)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email không khớp với tài khoản!"));
+        }
+
+        // 3. Kiểm tra OTP
+        String forgotOtpKey = "forgot_otp_" + cleanEmail;
+        OtpData forgotOtpData = otpStorage.get(forgotOtpKey);
+        if (forgotOtpData == null || forgotOtpData.expiryTime < System.currentTimeMillis()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mã xác thực OTP đã hết hạn hoặc không hợp lệ. Vui lòng lấy mã mới!"));
+        }
+        if (!forgotOtpData.otp.equals(otp)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mã xác thực OTP không chính xác!"));
         }
 
         tk.setPassword(passwordEncoder.encode(newPassword));
