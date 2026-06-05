@@ -48,19 +48,22 @@ public class TaiKhoanController {
     private final MailService mailService;
 
     private static final ConcurrentHashMap<String, OtpData> otpStorage = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, Map<String, String>> socialRegistrations = new ConcurrentHashMap<>();
 
     private static class OtpData {
         String otp;
         long expiryTime;
+
         OtpData(String otp, long expiryTime) {
             this.otp = otp;
             this.expiryTime = expiryTime;
         }
     }
 
-    public TaiKhoanController(TaiKhoanRepository taiKhoanRepository, PasswordEncoder passwordEncoder, JwtService jwtService, 
-                            PhongTroRepository phongTroRepository, HopDongRepository hopDongRepository,
-                            KhachHangRepository khachHangRepository, MailService mailService) {
+    public TaiKhoanController(TaiKhoanRepository taiKhoanRepository, PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            PhongTroRepository phongTroRepository, HopDongRepository hopDongRepository,
+            KhachHangRepository khachHangRepository, MailService mailService) {
         this.taiKhoanRepository = taiKhoanRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -73,11 +76,11 @@ public class TaiKhoanController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
 
-                String cleanUsername = request.getUsername().trim().toLowerCase();
+        String cleanUsername = request.getUsername().trim().toLowerCase();
         String clientIp = httpRequest.getRemoteAddr();
 
         Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(cleanUsername);
-        
+
         TaiKhoan userToVerify = userOpt.orElseGet(() -> {
             TaiKhoan fake = new TaiKhoan();
             fake.setPassword(BCRYPT_DUMMY_HASH);
@@ -90,7 +93,7 @@ public class TaiKhoanController {
             TaiKhoan user = userOpt.get();
 
             if (user.isLocked()) {
-                                log.warn("Login blocked (Account Locked). IP: {}", clientIp);
+                log.warn("Login blocked (Account Locked). IP: {}", clientIp);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("message", "Tài khoản của bạn đã bị khóa bởi Quản trị viên!"));
             }
@@ -112,7 +115,7 @@ public class TaiKhoanController {
             return ResponseEntity.ok(response);
         }
 
-                log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
+        log.warn("Login failed (Wrong credentials). Hash: {}, IP: {}", cleanUsername.hashCode(), clientIp);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("message", "Sai tên đăng nhập hoặc mật khẩu!"));
     }
@@ -120,21 +123,10 @@ public class TaiKhoanController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
         String cleanUsername = request.getUsername().trim().toLowerCase();
-        
+
         if (taiKhoanRepository.findByUsername(cleanUsername).isPresent()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Tên đăng nhập đã tồn tại! Vui lòng chọn tên khác."));
-        }
-
-        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Email đăng ký không được để trống!"));
-        }
-
-        String cleanEmail = request.getEmail().trim().toLowerCase();
-        if (khachHangRepository.findByEmail(cleanEmail).isPresent()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Email này đã được sử dụng! Vui lòng chọn email khác."));
         }
 
         String hoTen = request.getHoTen();
@@ -152,23 +144,11 @@ public class TaiKhoanController {
                     .body(Map.of("message", "Họ tên không được chứa số hoặc ký tự đặc biệt!"));
         }
 
-        String registerOtpKey = "register_otp_" + cleanEmail;
-        OtpData registerOtpData = otpStorage.get(registerOtpKey);
-        if (registerOtpData == null || registerOtpData.expiryTime < System.currentTimeMillis()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Mã xác thực OTP đã hết hạn hoặc không hợp lệ. Vui lòng lấy mã mới!"));
-        }
-        if (!registerOtpData.otp.equals(request.getOtp())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Mã xác thực OTP không chính xác!"));
-        }
-        otpStorage.remove(registerOtpKey);
-
         TaiKhoan taiKhoanMoi = new TaiKhoan();
         taiKhoanMoi.setUsername(cleanUsername);
         taiKhoanMoi.setPassword(passwordEncoder.encode(request.getPassword()));
-        
-        String reqRole = request.getRole(); 
+
+        String reqRole = request.getRole();
         if (reqRole == null || reqRole.trim().isEmpty()) {
             reqRole = "ROLE_USER";
         }
@@ -176,22 +156,101 @@ public class TaiKhoanController {
 
         KhachHang hoSoRong = new KhachHang();
         hoSoRong.setHoTen(hoTen);
-        hoSoRong.setEmail(cleanEmail);
         hoSoRong.setTaiKhoan(taiKhoanMoi);
         taiKhoanMoi.setKhachHang(hoSoRong);
 
         taiKhoanRepository.save(taiKhoanMoi);
 
-        log.info("New user registered successfully: Hash={}, IP={}", cleanUsername.hashCode(), httpRequest.getRemoteAddr());
+        log.info("New user registered successfully: Hash={}, IP={}", cleanUsername.hashCode(),
+                httpRequest.getRemoteAddr());
         return ResponseEntity.ok(Map.of("message", "Đăng ký tài khoản thành công!"));
+    }
+
+    @PostMapping("/register/social")
+    public ResponseEntity<?> registerSocial(@RequestBody Map<String, String> body, HttpServletRequest httpRequest) {
+        String socialToken = body.get("socialToken");
+        String username = body.get("username");
+        String password = body.get("password");
+        String role = body.get("role");
+
+        if (socialToken == null || socialToken.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mã xác thực mạng xã hội không hợp lệ!"));
+        }
+
+        Map<String, String> regData = socialRegistrations.get(socialToken);
+        if (regData == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Phiên đăng ký mạng xã hội đã hết hạn hoặc không hợp lệ!"));
+        }
+
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Tên đăng nhập không được để trống!"));
+        }
+        String cleanUsername = username.trim().toLowerCase();
+        if (cleanUsername.length() < 3 || cleanUsername.length() > 50) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Tên đăng nhập phải từ 3 đến 50 ký tự!"));
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mật khẩu không được để trống!"));
+        }
+        if (password.trim().length() < 3) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Mật khẩu phải từ 3 ký tự trở lên!"));
+        }
+
+        if (taiKhoanRepository.findByUsername(cleanUsername).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Tên đăng nhập đã tồn tại! Vui lòng chọn tên khác."));
+        }
+
+        String email = regData.get("email");
+        String hoTen = regData.get("name");
+        String providerStr = regData.get("provider");
+        com.btl.server.enums.AuthProvider provider = com.btl.server.enums.AuthProvider.valueOf(providerStr);
+
+        if (khachHangRepository.findByEmail(email).isPresent()) {
+            socialRegistrations.remove(socialToken);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Email này đã được sử dụng! Vui lòng chọn email khác."));
+        }
+
+        TaiKhoan taiKhoanMoi = new TaiKhoan();
+        taiKhoanMoi.setUsername(cleanUsername);
+        taiKhoanMoi.setPassword(passwordEncoder.encode(password));
+        taiKhoanMoi.setProvider(provider);
+
+        if (role == null || role.trim().isEmpty()) {
+            role = "ROLE_USER";
+        }
+        taiKhoanMoi.setRole(role);
+
+        KhachHang hoSoRong = new KhachHang();
+        hoSoRong.setHoTen(hoTen != null ? hoTen : "User " + cleanUsername);
+        hoSoRong.setEmail(email);
+        hoSoRong.setTaiKhoan(taiKhoanMoi);
+        taiKhoanMoi.setKhachHang(hoSoRong);
+
+        taiKhoanRepository.save(taiKhoanMoi);
+        socialRegistrations.remove(socialToken);
+
+        log.info("New social user registered: Username={}, Email={}, IP={}", cleanUsername, email,
+                httpRequest.getRemoteAddr());
+        return ResponseEntity.ok(Map.of("message", "Đăng ký tài khoản mạng xã hội thành công!"));
     }
 
     @GetMapping("/me")
     public ResponseEntity<?> layThongTinCaNhan(Principal principal) {
-        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (principal == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(principal.getName().toLowerCase());
-        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (userOpt.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         TaiKhoan user = userOpt.get();
         Map<String, Object> response = new HashMap<>();
@@ -204,7 +263,7 @@ public class TaiKhoanController {
 
     @GetMapping("/chu-tro")
     public ResponseEntity<?> layDanhSachChuTro() {
-                List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
+        List<TaiKhoanRepository.ChuTroProjection> danhSachChuTro = taiKhoanRepository.findChuTroProjections();
         return ResponseEntity.ok(danhSachChuTro);
     }
 
@@ -213,11 +272,11 @@ public class TaiKhoanController {
         TaiKhoan tk = taiKhoanRepository.findById(id)
                 .filter(t -> "ROLE_LANDLORD".equals(t.getRole()))
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy dữ liệu chủ trọ"));
-        
+
         Map<String, Object> map = new HashMap<>();
         map.put("id", tk.getId());
         map.put("username", tk.getUsername());
-        
+
         if (tk.getKhachHang() != null) {
             map.put("hoTen", tk.getKhachHang().getHoTen());
             map.put("soDienThoai", tk.getKhachHang().getSoDienThoai());
@@ -225,32 +284,34 @@ public class TaiKhoanController {
             map.put("tenNganHang", tk.getKhachHang().getTenNganHang());
             map.put("soTaiKhoan", tk.getKhachHang().getSoTaiKhoan());
             map.put("chuTaiKhoan", tk.getKhachHang().getChuTaiKhoan());
-            
+
             String cccd = tk.getKhachHang().getSoCccd();
             boolean isVerified = (cccd != null && !cccd.trim().isEmpty());
             map.put("isVerified", isVerified);
         } else {
             map.put("isVerified", false);
         }
-        
+
         return ResponseEntity.ok(map);
     }
 
-        @GetMapping("/admin/danh-sach-tai-khoan")
-    @PreAuthorize("hasRole('ADMIN')") 
+    @GetMapping("/admin/danh-sach-tai-khoan")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> layDanhSachNguoiDung(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         Page<TaiKhoan> taiKhoanPage = taiKhoanRepository.findAll(PageRequest.of(page, size));
-        
+
         List<Map<String, Object>> content = taiKhoanPage.stream().map(tk -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", tk.getId());
             map.put("username", tk.getUsername());
             map.put("role", tk.getRole());
-            map.put("locked", tk.isLocked()); 
-            map.put("hoTen", tk.getKhachHang() != null && tk.getKhachHang().getHoTen() != null ? tk.getKhachHang().getHoTen() : "");
+            map.put("locked", tk.isLocked());
+            map.put("hoTen",
+                    tk.getKhachHang() != null && tk.getKhachHang().getHoTen() != null ? tk.getKhachHang().getHoTen()
+                            : "");
             return map;
         }).toList();
 
@@ -262,7 +323,7 @@ public class TaiKhoanController {
 
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAdmin() {
@@ -270,17 +331,18 @@ public class TaiKhoanController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-     
+
     @PutMapping("/admin/{id}/toggle-lock")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> toggleLockUser(@PathVariable Long id, HttpServletRequest request) {
         TaiKhoan tk = taiKhoanRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy tài khoản"));
-         
+
         tk.setLocked(!tk.isLocked());
         taiKhoanRepository.save(tk);
-         
-        log.info("Admin toggled lock status for user ID: {}. New Status: {}, IP: {}", id, tk.isLocked(), request.getRemoteAddr());
+
+        log.info("Admin toggled lock status for user ID: {}. New Status: {}, IP: {}", id, tk.isLocked(),
+                request.getRemoteAddr());
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", tk.getId());
@@ -295,7 +357,7 @@ public class TaiKhoanController {
     public ResponseEntity<?> deleteUser(@PathVariable Long id, HttpServletRequest request) {
         TaiKhoan tk = taiKhoanRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy tài khoản"));
-        
+
         if ("ROLE_ADMIN".equals(tk.getRole())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Không thể xóa tài khoản Admin!"));
@@ -348,7 +410,8 @@ public class TaiKhoanController {
                     .body(Map.of("message", "Không thể gửi email xác thực. Vui lòng kiểm tra lại cấu hình SMTP!"));
         }
 
-        return ResponseEntity.ok(Map.of("message", "Mã xác thực OTP đã được gửi đến Gmail của bạn. Vui lòng kiểm tra hòm thư!"));
+        return ResponseEntity
+                .ok(Map.of("message", "Mã xác thực OTP đã được gửi đến Gmail của bạn. Vui lòng kiểm tra hòm thư!"));
     }
 
     @PostMapping("/forgot-password")
@@ -375,10 +438,16 @@ public class TaiKhoanController {
                     .body(Map.of("message", "Tên đăng nhập không tồn tại!", "errorType", "username"));
         }
 
-        // 2. Kiểm tra email liên kết với tài khoản này
+        // 2. Kiểm tra tài khoản đã bổ sung Gmail chưa
         TaiKhoan user = userOpt.get();
         KhachHang khachHang = user.getKhachHang();
-        if (khachHang == null || khachHang.getEmail() == null || !khachHang.getEmail().trim().toLowerCase().equals(cleanEmail)) {
+        if (khachHang == null || khachHang.getEmail() == null || khachHang.getEmail().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Tài khoản chưa có Gmail không thể khôi phục", "errorType", "username"));
+        }
+
+        // 3. Kiểm tra email liên kết với tài khoản này
+        if (!khachHang.getEmail().trim().toLowerCase().equals(cleanEmail)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Email không chính xác đối với tài khoản này!", "errorType", "email"));
         }
@@ -394,7 +463,8 @@ public class TaiKhoanController {
                     .body(Map.of("message", "Không thể gửi email xác thực. Vui lòng kiểm tra lại cấu hình SMTP!"));
         }
 
-        return ResponseEntity.ok(Map.of("message", "Mã xác thực OTP khôi phục mật khẩu đã được gửi đến Gmail của bạn."));
+        return ResponseEntity
+                .ok(Map.of("message", "Mã xác thực OTP khôi phục mật khẩu đã được gửi đến Gmail của bạn."));
     }
 
     @PostMapping("/verify-forgot-otp")
@@ -404,8 +474,8 @@ public class TaiKhoanController {
         String otp = body.get("otp");
 
         if (username == null || username.trim().isEmpty() ||
-            email == null || email.trim().isEmpty() ||
-            otp == null || otp.trim().isEmpty()) {
+                email == null || email.trim().isEmpty() ||
+                otp == null || otp.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Vui lòng nhập đầy đủ tên tài khoản, email và mã OTP!"));
         }
@@ -424,7 +494,8 @@ public class TaiKhoanController {
         // 2. Kiểm tra email liên kết
         TaiKhoan user = userOpt.get();
         KhachHang khachHang = user.getKhachHang();
-        if (khachHang == null || khachHang.getEmail() == null || !khachHang.getEmail().trim().toLowerCase().equals(cleanEmail)) {
+        if (khachHang == null || khachHang.getEmail() == null
+                || !khachHang.getEmail().trim().toLowerCase().equals(cleanEmail)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Email không khớp với tài khoản!"));
         }
@@ -452,11 +523,12 @@ public class TaiKhoanController {
         String newPassword = body.get("newPassword");
 
         if (username == null || username.trim().isEmpty() ||
-            email == null || email.trim().isEmpty() ||
-            otp == null || otp.trim().isEmpty() ||
-            newPassword == null || newPassword.trim().isEmpty()) {
+                email == null || email.trim().isEmpty() ||
+                otp == null || otp.trim().isEmpty() ||
+                newPassword == null || newPassword.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Vui lòng nhập đầy đủ thông tin tên tài khoản, email, mã OTP và mật khẩu mới!"));
+                    .body(Map.of("message",
+                            "Vui lòng nhập đầy đủ thông tin tên tài khoản, email, mã OTP và mật khẩu mới!"));
         }
 
         String cleanUsername = username.trim().toLowerCase();
@@ -500,6 +572,25 @@ public class TaiKhoanController {
         taiKhoanRepository.save(tk);
 
         otpStorage.remove(forgotOtpKey);
-        return ResponseEntity.ok(Map.of("message", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới."));
+        return ResponseEntity
+                .ok(Map.of("message", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới."));
+    }
+
+    @GetMapping("/debug-db")
+    public ResponseEntity<?> debugDb() {
+        List<TaiKhoan> accounts = taiKhoanRepository.findAll();
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (TaiKhoan tk : accounts) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("username", tk.getUsername());
+            map.put("provider", tk.getProvider());
+            map.put("role", tk.getRole());
+            if (tk.getKhachHang() != null) {
+                map.put("email", tk.getKhachHang().getEmail());
+                map.put("hoTen", tk.getKhachHang().getHoTen());
+            }
+            result.add(map);
+        }
+        return ResponseEntity.ok(result);
     }
 }

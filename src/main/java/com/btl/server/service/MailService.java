@@ -37,6 +37,7 @@ public class MailService {
             mailSender.send(message);
             System.out.println("[SMTP SUCCESS] Đã gửi email chứa OTP thành công tới: " + to);
         } catch (Exception e) {
+            e.printStackTrace();
             System.err.println("==================================================================");
             System.err.println("[DEVELOPER SMTP FALLBACK] GỬI MAIL SMTP THẤT BẠI (CHƯA CẤU HÌNH GMAIL THỰC TẾ).");
             System.err.println(">>> ĐỂ TEST ĐĂNG KÝ / QUÊN MẬT KHẨU, HÃY DÙNG MÃ OTP SAU:");
