@@ -11,7 +11,6 @@ import java.util.List;
 
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, Long> {
-    
     boolean existsByPhongTroIdAndThangAndNam(Long phongId, Integer thang, Integer nam);
 
     @Query("SELECT hd FROM HoaDon hd JOIN HopDong h ON hd.phongTro.id = h.phongTro.id WHERE h.khachHang.id = :khachHangId AND h.trangThai = 'DA_DUYET'")

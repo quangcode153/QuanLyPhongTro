@@ -19,7 +19,6 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
-
     @Autowired
     private TaiKhoanRepository taiKhoanRepository;
 

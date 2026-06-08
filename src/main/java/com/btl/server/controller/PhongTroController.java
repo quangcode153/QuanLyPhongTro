@@ -30,7 +30,6 @@ import com.btl.server.repository.HopDongRepository;
 @RestController
 @RequestMapping("/api/phong-tro")
 public class PhongTroController {
-
     private static final Logger log = LoggerFactory.getLogger(PhongTroController.class);
 
     private final PhongTroService phongTroService;

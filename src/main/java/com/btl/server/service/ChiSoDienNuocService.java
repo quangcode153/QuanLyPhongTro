@@ -17,15 +17,9 @@ import com.btl.server.repository.HoaDonRepository;
 import com.btl.server.repository.PhongTroRepository;
 import com.btl.server.dto.PhieuTinhTienDTO;
 
-/**
- * Service quản lý nghiệp vụ ghi chỉ số Điện và Nước hàng tháng cho các phòng trọ.
- * Bao gồm các nghiệp vụ cốt lõi: 
- * 1. Chốt số cũ, số mới và tự động tính toán sinh ra Hóa đơn chưa thanh toán.
- * 2. Cập nhật chỉ số điện nước khi có sai sót và tự động tính toán lại tổng tiền của Hóa đơn tương ứng.
- */
+// Service quản lý nghiệp vụ ghi chỉ số Điện và Nước hàng tháng cho các phòng trọ. Bao gồm các nghiệp vụ cốt lõi: 1. Chốt số cũ, số mới và tự động tính toán sinh ra Hóa đơn chưa thanh toán. 2. Cập nhật chỉ số điện nước khi có sai sót và tự động tính toán lại tổng tiền của Hóa đơn tương ứng.
 @Service
 public class ChiSoDienNuocService {
-
     private static final Logger log = LoggerFactory.getLogger(ChiSoDienNuocService.class);
 
     private final ChiSoDienNuocRepository chiSoRepo;
@@ -44,18 +38,9 @@ public class ChiSoDienNuocService {
         this.hoaDonRepository = hoaDonRepository;
     }
 
-    /**
-     * Chốt số điện nước hàng tháng và tự động lập hóa đơn dịch vụ mới.
-     * Quy tắc kiểm tra nghiệp vụ:
-     * 1. Hóa đơn cho chu kỳ tháng/năm của phòng trọ này phải chưa tồn tại (tránh chốt trùng 2 lần).
-     * 2. Chỉ số mới nhập vào (điện/nước) không được nhỏ hơn chỉ số cũ ghi nhận tháng trước.
-     * 
-     * @param chiSo Thực thể chứa thông tin chỉ số điện nước cũ, mới cần chốt
-     * @return PhieuTinhTienDTO Chứa thông tin chi tiết tính tiền trả về cho Client hiển thị đối soát lập tức
-     */
+    // Chốt số điện nước hàng tháng và tự động lập hóa đơn dịch vụ mới. Quy tắc kiểm tra nghiệp vụ: 1. Hóa đơn cho chu kỳ tháng/năm của phòng trọ này phải chưa tồn tại (tránh chốt trùng 2 lần). 2. Chỉ số mới nhập vào (điện/nước) không được nhỏ hơn chỉ số cũ ghi nhận tháng trước.
     @Transactional
     public PhieuTinhTienDTO chotSoVaTinhTien(ChiSoDienNuoc chiSo) {
-        
         Long idPhong = chiSo.getPhongTro().getId();
         Integer thang = chiSo.getThang();
         Integer nam = chiSo.getNam();
@@ -114,15 +99,7 @@ public class ChiSoDienNuocService {
         return phieu;
     }
 
-    /**
-     * Cập nhật chỉ số điện nước khi chủ trọ phát hiện nhập sai sót.
-     * Quy tắc kiểm tra nghiệp vụ nghiêm ngặt:
-     * 1. Hóa đơn tương ứng phải ở trạng thái CHƯA THANH TOÁN (Nếu khách đã đóng tiền thì cấm sửa chỉ số).
-     * 2. Chỉ số điện nước mới nhập vẫn phải đảm bảo số mới >= số cũ.
-     * 
-     * @param hoaDonId ID của hóa đơn muốn sửa chỉ số điện nước
-     * @param chiSoMoi Chứa các thông tin số điện/nước cũ và mới đã được chỉnh sửa
-     */
+    // Cập nhật chỉ số điện nước khi chủ trọ phát hiện nhập sai sót. Quy tắc kiểm tra nghiệp vụ nghiêm ngặt: 1. Hóa đơn tương ứng phải ở trạng thái CHƯA THANH TOÁN (Nếu khách đã đóng tiền thì cấm sửa chỉ số). 2. Chỉ số điện nước mới nhập vẫn phải đảm bảo số mới >= số cũ.
     @Transactional
     public PhieuTinhTienDTO capNhatChiSoVaTinhTien(Long hoaDonId, ChiSoDienNuoc chiSoMoi) {
         HoaDon hd = hoaDonRepository.findById(hoaDonId)
@@ -180,9 +157,7 @@ public class ChiSoDienNuocService {
         return phieu;
     }
 
-    /**
-     * Tra cứu nhanh bản ghi chỉ số điện nước của một phòng trong chu kỳ cụ thể.
-     */
+    // Tra cứu nhanh bản ghi chỉ số điện nước của một phòng trong chu kỳ cụ thể.
     public java.util.Optional<ChiSoDienNuoc> layChiSoDienNuoc(Long phongId, Integer thang, Integer nam) {
         return chiSoRepo.findByPhongTroIdAndThangAndNam(phongId, thang, nam);
     }

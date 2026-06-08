@@ -37,7 +37,6 @@ import jakarta.servlet.http.HttpServletRequest;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-
     @Autowired
     private JwtAuthenticationFilter jwtAuthFilter;
 

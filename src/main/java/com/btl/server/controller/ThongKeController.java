@@ -14,7 +14,6 @@ import com.btl.server.service.ThongKeService;
 @RestController
 @RequestMapping("/api/thong-ke")
 public class ThongKeController {
-
     private final ThongKeService thongKeService;
 
     public ThongKeController(ThongKeService thongKeService) {

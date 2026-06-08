@@ -23,7 +23,6 @@ import com.btl.server.repository.HopDongRepository;
 
 @Service
 public class KhachHangService {
-
     private static final Logger log = LoggerFactory.getLogger(KhachHangService.class);
 
     private final KhachHangRepository khachHangRepository;

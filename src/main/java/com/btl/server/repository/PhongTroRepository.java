@@ -17,7 +17,6 @@ import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface PhongTroRepository extends JpaRepository<PhongTro, Long> {
-    
     List<PhongTro> findByChuTroId(Long chuTroId);
 
     List<PhongTro> findByTrangThai(TrangThaiPhong trangThai);

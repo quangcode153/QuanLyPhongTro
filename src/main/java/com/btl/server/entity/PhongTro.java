@@ -8,7 +8,6 @@ import com.btl.server.enums.TrangThaiPhong;
 @Entity
 @Table(name = "phong_tro")
 public class PhongTro {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

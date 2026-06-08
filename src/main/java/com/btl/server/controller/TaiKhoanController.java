@@ -35,7 +35,6 @@ import com.btl.server.service.MailService;
 @RestController
 @RequestMapping("/api/tai-khoan")
 public class TaiKhoanController {
-
     private static final Logger log = LoggerFactory.getLogger(TaiKhoanController.class);
     private final String BCRYPT_DUMMY_HASH = "$2a$10$wTf2E/.n./l5.f.P./R7l.y0r.2X/n.O.m.r.y.Q.t.Q.O.m.X.Y.m.C";
 
@@ -75,7 +74,6 @@ public class TaiKhoanController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequestDTO request, HttpServletRequest httpRequest) {
-
         String cleanUsername = request.getUsername().trim().toLowerCase();
         String clientIp = httpRequest.getRemoteAddr();
 
@@ -300,7 +298,6 @@ public class TaiKhoanController {
     public ResponseEntity<?> layDanhSachNguoiDung(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-
         Page<TaiKhoan> taiKhoanPage = taiKhoanRepository.findAll(PageRequest.of(page, size));
 
         List<Map<String, Object>> content = taiKhoanPage.stream().map(tk -> {

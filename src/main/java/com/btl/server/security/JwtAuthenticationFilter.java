@@ -27,7 +27,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Autowired
@@ -43,7 +42,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
         String requestPath = request.getRequestURI();
 
         if (requestPath.contains("/tai-khoan/login") || requestPath.contains("/tai-khoan/register")) {
@@ -64,7 +62,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String username = jwtService.extractUsername(token);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
                 Optional<TaiKhoan> userOpt = taiKhoanRepository.findByUsername(username);
                 
                 if (userOpt.isPresent() && userOpt.get().isLocked()) {
@@ -97,15 +94,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-
         } catch (ExpiredJwtException e) {
             logger.warn("⚠️ Token hết hạn khi truy cập: {}", requestPath);
             SecurityContextHolder.clearContext();
-
         } catch (UsernameNotFoundException e) {
             logger.warn("⚠️ Tài khoản trong token không tồn tại trong hệ thống: {}", e.getMessage());
             SecurityContextHolder.clearContext();
-
         } catch (Exception e) {
             logger.error("⚠️ JWT lỗi định dạng hoặc chữ ký: ", e);
             SecurityContextHolder.clearContext();

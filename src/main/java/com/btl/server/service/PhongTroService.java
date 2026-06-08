@@ -17,17 +17,11 @@ import com.btl.server.repository.PhongTroRepository;
 import com.btl.server.repository.HoaDonRepository;
 import com.btl.server.repository.ChiSoDienNuocRepository;
 
-/**
- * Service quản lý toàn bộ nghiệp vụ liên quan đến Phòng Trọ.
- * Bao gồm các tính năng: Tìm kiếm, Thêm/Sửa/Xóa phòng, Cập nhật trạng thái phòng,
- * lọc phòng theo giá, và tự động xử lý hợp đồng liên quan khi xóa/sửa trạng thái phòng.
- */
+// Service phòng trọ
 @Service
 public class PhongTroService {
-
     private static final Logger log = LoggerFactory.getLogger(PhongTroService.class);
 
-    // Tiêm các Repository cần thiết thông qua Constructor Injection
     private final PhongTroRepository phongTroRepository;
     private final HopDongRepository hopDongRepository;
     private final HoaDonRepository hoaDonRepository;
@@ -43,80 +37,43 @@ public class PhongTroService {
         this.chiSoDienNuocRepository = chiSoDienNuocRepository;
     }
 
-    /**
-     * Lấy danh sách tất cả các phòng trọ hiện có trong hệ thống.
-     * @return Danh sách thực thể PhongTro
-     */
+    // Lấy tất cả phòng trọ
     public List<PhongTro> getAllPhongs() {
         return phongTroRepository.findAll();
     }
 
-    /**
-     * Lưu thông tin một phòng trọ mới hoặc cập nhật phòng trọ hiện có.
-     * @param phongTro Đối tượng chứa thông tin phòng trọ cần lưu
-     * @return Đối tượng PhongTro đã lưu thành công trong CSDL
-     */
+    // Lưu/Cập nhật phòng trọ.
     public PhongTro savePhong(PhongTro phongTro) {
         return phongTroRepository.save(phongTro);
     }
 
-    /**
-     * Tìm kiếm chi tiết một phòng trọ dựa vào ID.
-     * @param id Khóa chính của phòng trọ
-     * @return Thực thể PhongTro nếu tìm thấy
-     * @throws NotFoundException Nếu không tìm thấy phòng trọ có ID tương ứng
-     */
+    // Tìm phòng trọ theo ID.
     public PhongTro getPhongById(Long id) {
         return phongTroRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng trọ có ID: " + id));
     }
 
-    /**
-     * Tìm danh sách các phòng trọ do một chủ trọ quản lý.
-     * @param chuTroId ID tài khoản của chủ trọ
-     * @return Danh sách phòng trọ thuộc về chủ trọ đó
-     */
+    // Tìm danh sách các phòng trọ do một chủ trọ quản lý.
     public List<PhongTro> getPhongByChuTroId(Long chuTroId) {
         return phongTroRepository.findByChuTroId(chuTroId);
     }
 
-    /**
-     * Tìm kiếm các phòng trọ theo trạng thái (ví dụ: TRỐNG, ĐÃ THUÊ, ĐANG SỬA).
-     * @param trangThai Trạng thái cần tìm kiếm
-     * @return Danh sách phòng trọ thỏa mãn
-     */
+    // Tìm kiếm các phòng trọ theo trạng thái (ví dụ: TRỐNG, ĐÃ THUÊ, ĐANG SỬA).
     public List<PhongTro> timPhongTheoTrangThai(TrangThaiPhong trangThai) {
         return phongTroRepository.findByTrangThai(trangThai);
     }
 
-    /**
-     * Lọc danh sách các phòng trọ theo trạng thái và có giá thuê nhỏ hơn hoặc bằng một mức giá tối đa.
-     * @param trangThai Trạng thái phòng trọ
-     * @param giaToiDa Mức giá trần để lọc
-     * @return Danh sách phòng trọ thỏa mãn
-     */
+    // Lọc danh sách các phòng trọ theo trạng thái và có giá thuê nhỏ hơn hoặc bằng một mức giá tối đa.
     public List<PhongTro> locPhongTheoGia(TrangThaiPhong trangThai, BigDecimal giaToiDa) {
         return phongTroRepository.findByTrangThaiAndGiaPhongLessThanEqual(trangThai, giaToiDa);
     }
 
-    /**
-     * Tìm kiếm phòng trọ linh hoạt theo nhiều bộ lọc kết hợp (tên, địa chỉ, khoảng giá, trạng thái).
-     * Phục vụ cho tính năng tìm kiếm phòng trọ ở giao diện công khai của Khách thuê.
-     */
+    // Tìm kiếm phòng trọ
     public List<PhongTro> searchPhongTro(String tenPhong, String diaChi, BigDecimal giaToiThieu, BigDecimal giaToiDa, TrangThaiPhong trangThai) {
         return phongTroRepository.searchPhongTro(tenPhong, diaChi, giaToiThieu, giaToiDa, trangThai);
     }
 
-    /**
-     * Cập nhật trạng thái hoạt động của một phòng trọ.
-     * Nếu phòng trọ được chuyển sang trạng thái TRỐNG (nghĩa là khách dọn đi hoặc thanh lý xong),
-     * hệ thống sẽ tự động cập nhật kết thúc (chuyển sang trạng thái DA_KET_THUC) cho toàn bộ
-     * các hợp đồng đang có hiệu lực (DA_DUYET) của phòng đó.
-     * 
-     * @param id ID của phòng trọ cần cập nhật
-     * @param trangThaiMoi Trạng thái phòng trọ mới
-     * @return Đối tượng PhongTro sau khi cập nhật
-     */
+    // Cập nhật trạng thái phòng. Nếu phòng trọ được chuyển sang trạng thái TRỐNG (nghĩa là khách dọn đi hoặc thanh lý xong), hệ thống sẽ tự động cập nhật kết thúc (chuyển sang trạng thái DA_KET_THUC) cho toàn bộ các hợp đồng đang có hiệu lực (DA_DUYET) của phòng đó.
     @Transactional
     public PhongTro capNhatTrangThaiPhong(Long id, TrangThaiPhong trangThaiMoi) {
         PhongTro existingPhong = getPhongById(id);
@@ -134,16 +91,7 @@ public class PhongTroService {
         return existingPhong;
     }
 
-    /**
-     * Xóa hoàn toàn thông tin phòng trọ ra khỏi hệ thống.
-     * Quy tắc nghiệp vụ bắt buộc: 
-     * 1. Không được phép xóa phòng trọ đang có khách thuê (trạng thái DA_THUE). Phải thanh lý hợp đồng trước.
-     * 2. Để tránh lỗi ràng buộc khóa ngoại (Foreign Key Constraint), phương thức này sẽ tự động xóa sạch
-     *    tất cả các dữ liệu liên quan đến phòng trọ đó ở các bảng: Chỉ số điện nước, Hóa đơn, và Hợp đồng.
-     * 
-     * @param id ID của phòng trọ cần xóa
-     * @throws BadRequestException Nếu phòng đang có trạng thái ĐÃ THUÊ
-     */
+    // Xóa phòng trọ
     @Transactional
     public void deletePhong(Long id) {
         PhongTro existingPhong = getPhongById(id);

@@ -22,7 +22,6 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 
 @Component
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-
     @Autowired
     private JwtService jwtService;
 

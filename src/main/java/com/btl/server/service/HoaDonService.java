@@ -16,7 +16,6 @@ import java.util.List;
 
 @Service
 public class HoaDonService {
-
     private final HoaDonRepository hoaDonRepository;
     private final ChiSoDienNuocRepository chiSoRepo;
     private final NhatKyService nhatKyService;
@@ -85,7 +84,6 @@ public class HoaDonService {
 
             hoaDonRepository.save(hd);
         } catch (Exception e) {
-            
             if (hd.getTienPhong() == null) hd.setTienPhong(BigDecimal.ZERO);
             if (hd.getTienDien() == null) hd.setTienDien(BigDecimal.ZERO);
             if (hd.getTienNuoc() == null) hd.setTienNuoc(BigDecimal.ZERO);

@@ -18,7 +18,6 @@ import com.btl.server.repository.PhongTroRepository;
 
 @Service
 public class ThongKeService {
-
     private final HoaDonRepository hoaDonRepository;
     private final PhongTroRepository phongTroRepository;
 
