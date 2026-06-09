@@ -64,13 +64,18 @@ public class PhongTroControllerTest {
         PhongTro existing = new PhongTro();
         existing.setChuTroId(100L);
         
+        PhongTro updated = new PhongTro();
+        updated.setTenPhong("Phòng 101");
+        updated.setGiaPhong(new java.math.BigDecimal("3000000"));
+        updated.setChuTroId(100L);
+        
         when(phongTroService.getPhongById(id)).thenReturn(existing);
         when(phongTroSecurity.isOwner(anyLong(), anyString())).thenReturn(true);
 
         mockMvc.perform(put("/api/phong-tro/" + id)
                 .with(user("chu_tro").roles("LANDLORD"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new PhongTro())))
+                .content(objectMapper.writeValueAsString(updated)))
                 .andExpect(status().isOk());
     }
 

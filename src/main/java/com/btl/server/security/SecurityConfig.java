@@ -97,6 +97,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/tin-nhan/**").permitAll()
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED))
+            )
             .oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                 .successHandler(oAuth2AuthenticationSuccessHandler)

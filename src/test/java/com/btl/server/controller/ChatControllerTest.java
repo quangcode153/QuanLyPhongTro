@@ -36,8 +36,8 @@ class ChatControllerTest {
     void setUp() {
         tinNhanTest = new TinNhan();
         tinNhanTest.setId(1L);
-        tinNhanTest.setNguoiGuiId(10);
-        tinNhanTest.setNguoiNhanId(20);
+        tinNhanTest.setNguoiGuiId(10L);
+        tinNhanTest.setNguoiNhanId(20L);
         tinNhanTest.setNoiDung("Xin chao");
     }
 

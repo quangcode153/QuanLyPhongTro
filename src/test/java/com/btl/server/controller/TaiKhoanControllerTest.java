@@ -25,10 +25,18 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.btl.server.entity.TaiKhoan;
 import com.btl.server.repository.TaiKhoanRepository;
+import com.btl.server.repository.PhongTroRepository;
+import com.btl.server.repository.HopDongRepository;
+import com.btl.server.repository.KhachHangRepository;
 import com.btl.server.security.JwtService;
+import com.btl.server.service.MailService;
 
 
-@WebMvcTest(TaiKhoanController.class)
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 public class TaiKhoanControllerTest {
 
     @Autowired
@@ -42,6 +50,18 @@ public class TaiKhoanControllerTest {
 
     @MockBean
     private JwtService jwtService;
+
+    @MockBean
+    private PhongTroRepository phongTroRepository;
+
+    @MockBean
+    private HopDongRepository hopDongRepository;
+
+    @MockBean
+    private KhachHangRepository khachHangRepository;
+
+    @MockBean
+    private MailService mailService;
 
     private String taoAuthJson(String username, String password) {
         return "{ \"username\": \"" + username + "\", \"password\": \"" + password + "\" }";
@@ -107,7 +127,7 @@ public class TaiKhoanControllerTest {
         when(taiKhoanRepository.findByUsername("quang_pro")).thenReturn(Optional.of(mockUser));
 
         mockMvc.perform(get("/api/tai-khoan/me")
-                .principal(() -> "quang_pro"))
+                .with(user("quang_pro").roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("quang_pro"))
                 .andExpect(jsonPath("$.id").value(99L))
